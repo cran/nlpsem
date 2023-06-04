@@ -40,3 +40,4 @@ model or a latent change score model growth curve model.
 This function computes the initial values for the parameters for a multivariate latent growth curve model
 or a latent change score model.
 }
+\keyword{internal}

@@ -135,8 +135,9 @@ getMediation <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, reco
                              x_var = x_var, curveFun = curveFun, records = records, res_cor = res_cor,
                              starts = starts)
   if (!is.null(tries)){
-    model <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
+    model0 <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
                        loc = loc, scale = scale)
+    model <- mxRun(model0)
   }
   else{
     model <- mxRun(model_mx)

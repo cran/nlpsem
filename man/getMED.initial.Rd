@@ -57,3 +57,4 @@ longitudinal mediation model.
 \description{
 This function computes the initial values of the parameters for a longitudinal mediation model.
 }
+\keyword{internal}

@@ -25,6 +25,8 @@
 #' @return A list containing the initial values for the parameters in the multivariate latent growth curve
 #' model or a latent change score model growth curve model.
 #'
+#' @keywords internal
+#'
 #' @importFrom stats var cov lm na.exclude
 #'
 getMULTI.initial <- function(dat, t_var, y_var, curveFun, records, res_scale, res_cor){

@@ -59,3 +59,4 @@ A list of manifest and latent variables and paths for an mxModel object.
 This function defines multivariate latent growth curve models or multivariate latent change score models as class-
 specific models (submodels) for a longitudinal multiple group model.
 }
+\keyword{internal}

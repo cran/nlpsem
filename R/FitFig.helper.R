@@ -36,6 +36,8 @@
 #'
 #' @return A ggplot object or a list of ggplot objects.
 #'
+#' @keywords internal
+#'
 #' @importFrom tidyr pivot_longer
 #' @importFrom ggplot2 ggplot aes geom_line geom_smooth labs scale_linetype_manual scale_x_continuous guides guide_legend theme_bw theme element_text element_rect geom_step scale_color_manual margin
 #' @importFrom grDevices colorRampPalette

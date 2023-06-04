@@ -41,3 +41,4 @@ changes, and values of change-from-baseline for multivariate latent change score
 This function derives additional parameters for multivariate latent change score models. It specifies the means and
 variances of interval-specific slopes, interval-specific changes, and values of change-from-baseline.
 }
+\keyword{internal}

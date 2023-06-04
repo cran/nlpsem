@@ -56,6 +56,8 @@
 #' @return
 #' A list containing initial values for each class in the specified model.
 #'
+#' @keywords internal
+#'
 #' @importFrom stats var cov lm na.exclude kmeans
 #'
 getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_var, records, y_var, curveFun,

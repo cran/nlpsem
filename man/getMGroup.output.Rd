@@ -65,3 +65,4 @@ A dataframe containing point estimates and standard errors for the parameters of
 This function computes and returns a data frame containing point estimates and standard errors for the parameters of
 a longitudinal multiple group model.
 }
+\keyword{internal}

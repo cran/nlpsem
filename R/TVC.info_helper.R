@@ -21,6 +21,8 @@
 #' @return A list containing two elements: X_PARAM and KAPPA. X_PARAM is a list of OpenMx paths and parameters for the
 #' TVC, and KAPPA is an OpenMx path for the temporal effect of the TVC on the corresponding longitudinal outcome.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxAlgebra mxAlgebraFromString
 #'
 getTVC.info <- function(y_var, records, growth_TIC, TVC, decompose, starts){

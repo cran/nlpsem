@@ -14,6 +14,8 @@
 #' @return A data frame containing the point estimates and standard errors for parameters of a latent change  score
 #' model with time-invariant covariates (if any).
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxEval mxSE diag2vec
 #'
 getLCSM.output <- function(model, curveFun, growth_TIC, names){

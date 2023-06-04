@@ -11,6 +11,8 @@
 #' @return A data frame containing the point estimates and standard errors for parameters of a latent growth curve
 #' model with time-invariant covariates (if any).
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxEval mxSE
 #'
 getLGCM.output <- function(model, growth_TIC, names){

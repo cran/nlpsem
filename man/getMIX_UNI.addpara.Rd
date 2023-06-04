@@ -60,3 +60,4 @@ This function derives additional parameters for a mixture model with latent chan
 particular, it specifies the means and variances of interval-specific slopes, interval-specific changes, and values
 of change-from-baseline.
 }
+\keyword{internal}

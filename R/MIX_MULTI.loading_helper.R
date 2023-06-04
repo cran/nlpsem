@@ -21,6 +21,8 @@
 #' @return A list containing the specification of definition variables (i.e., individual measurement occasions) and factor
 #' loadings of multivariate longitudinal outcomes.
 #'
+#' @keywords internal
+#'
 getMIX_MULTI.loadings <- function(nClass, y_model, t_var, y_var, curveFun, intrinsic = NULL, records){
   output_CL <- list()
   for (k in 1:nClass){

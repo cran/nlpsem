@@ -59,11 +59,11 @@ where each vector provides the indices of the observed study waves for each long
 when \code{sub_Model} is not \code{"MGM"}. For \code{sub_Model} being \code{"MGM"}, \code{y_var} should be a string vector where each element
 corresponds to the prefix of the column names for each outcome variable across the study waves.}
 
-\item{curveFun}{A string specifying the functional form of the growth curve. Supported options for \code{y_model = "LGCM"} include:
+\item{curveFun}{A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"} include:
 \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
 (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for
-\code{y_model = "LCSM"} include: \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
-\code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"nonparametric"} (or \code{"NonP"}).}
+\code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
+and \code{"Jenss-Bayley"} (or \code{"JB"}).}
 
 \item{intrinsic}{A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. By default, this is
 \code{NULL} as it is unnecessary when \code{sub_Model} is \code{"MED"}.}

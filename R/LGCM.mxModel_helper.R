@@ -24,6 +24,8 @@
 #'
 #' @return A pre-optimized mxModel for a Latent Growth Curve Model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxModel mxAlgebra mxMatrix mxData
 #'
 getLGCM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, growth_TIC, starts){

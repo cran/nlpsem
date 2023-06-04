@@ -26,6 +26,8 @@
 #' @return A list containing the specification of the means and variances of interval-specific slopes, interval-specific
 #' changes, and values of change-from-baseline for multivariate latent change score models.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxMatrix mxAlgebra mxAlgebraFromString diag2vec
 #'
 getMULTI.addpara <- function(dat, t_var, y_var, curveFun, intrinsic, records, starts){

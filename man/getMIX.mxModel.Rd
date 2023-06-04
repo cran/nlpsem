@@ -99,3 +99,4 @@ A pre-optimized mxModel for a longitudinal mixture model.
 This function builds up an object of mxModel for a mixture model with user-specified number of latent classes, class-
 specific models and functional form (including whether intrinsically nonlinear).
 }
+\keyword{internal}

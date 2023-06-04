@@ -53,3 +53,4 @@ Each of these elements is a numeric vector or matrix containing the initial para
 This function computes the initial values of the parameters for a latent growth curve model or a latent change
 score model with time-invariant covariates (if any).
 }
+\keyword{internal}

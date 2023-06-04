@@ -48,3 +48,4 @@ A pre-optimized mxModel for a Latent Change Score Model.
 This function builds up an object of mxModel for a Latent Change Score Model with user-specified
 functional form (including whether intrinsically nonlinear) with time-invariant covariates (if any).
 }
+\keyword{internal}

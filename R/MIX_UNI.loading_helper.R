@@ -26,6 +26,8 @@
 #' growth curve models, and individual time points and individual time lags (intervals) between adjacent time points
 #' for latent change score models) and factor loadings of a univariate longitudinal outcome.
 #'
+#' @keywords internal
+#'
 getMIX_UNI.loadings <- function(nClass, y_model, t_var, records, y_var, curveFun, intrinsic){
   # Define `outPoint` to store individual time points from raw data
   output_CL <- list()

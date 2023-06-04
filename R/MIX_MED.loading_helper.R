@@ -29,6 +29,8 @@
 #' @return A list containing the specification of definition variables (i.e., individual measurement occasions) and factor
 #' loadings of a longitudinal mediation model.
 #'
+#' @keywords internal
+#'
 getMIX_MED.loadings <- function(nClass, t_var, y_var, m_var, x_var, x_type, curveFun, y_records, m_records,
                                 x_records = NULL){
   output_CL <- list()

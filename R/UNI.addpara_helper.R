@@ -27,9 +27,11 @@
 #' model.
 #' @param starts A list containing initial values for the parameters, either takes the value passed from \code{getLCSM()} or
 #' \code{getTVCmodel()}, or derived by the helper function \code{getUNI.initial()} or \code{getTVC.initial()}.
-
+#'
 #' @return A list containing the specification of the means and variances of interval-specific slopes, interval-specific
 #' changes, and values of change-from-baseline for latent change score models.
+#'
+#' @keywords internal
 #'
 #' @importFrom OpenMx mxMatrix mxAlgebra diag2vec
 #'

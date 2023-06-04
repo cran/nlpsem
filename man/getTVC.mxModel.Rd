@@ -69,3 +69,4 @@ This function builds up an object of mxModel for a latent growth curve model or 
 with user-specified functional form (including whether intrinsically nonlinear), time-varying covariate,
 and with time-invariant covariates (if any).
 }
+\keyword{internal}

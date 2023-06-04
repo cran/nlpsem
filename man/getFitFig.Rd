@@ -70,3 +70,4 @@ A ggplot object or a list of ggplot objects.
 This is an internal function that generates a ggplot object for a fitted model. It is called by the \code{getFigure}
 function.
 }
+\keyword{internal}

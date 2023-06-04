@@ -29,3 +29,4 @@ This function derives individual growth factors for the specified latent growth 
 latent change score model from raw data. These individual growth factors help further compute initial values
 for parameters related to growth factors, time-invariant covariates (if any), and path coefficients (if any).
 }
+\keyword{internal}

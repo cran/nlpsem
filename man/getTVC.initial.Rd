@@ -67,3 +67,4 @@ time-invariant covariates (if any).
 This function computes the initial values of the parameters for a latent growth curve model or a latent change
 score model with a time-varying covariate and time-invariant covariates (if any).
 }
+\keyword{internal}

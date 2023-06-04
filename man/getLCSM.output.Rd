@@ -26,3 +26,4 @@ model with time-invariant covariates (if any).
 This function computes and returns a data frame containing point estimates and standard errors for the parameters
 of a latent change score model with time-invariant covariates (if any)
 }
+\keyword{internal}

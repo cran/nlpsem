@@ -58,3 +58,4 @@ loadings of a longitudinal mediation model.
 This function specifies the factor loadings for a mixture model with longitudinal mediation model with given functional
 form as submodels
 }
+\keyword{internal}

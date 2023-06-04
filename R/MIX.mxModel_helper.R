@@ -54,6 +54,8 @@
 #'
 #' @return A pre-optimized mxModel for a longitudinal mixture model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxFitFunctionML mxExpectationMixture
 #'
 getMIX.mxModel <- function(dat, nClass, sub_Model, cluster_TIC, t_var, y_var, curveFun, intrinsic, records,

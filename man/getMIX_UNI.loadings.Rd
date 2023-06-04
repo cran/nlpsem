@@ -49,3 +49,4 @@ for latent change score models) and factor loadings of a univariate longitudinal
 This function specifies the factor loadings for a mixture model with a univariate longitudinal outcome. The longitudinal
 outcome is fit by a Latent Growth Curve Model or a Latent Change Score Model.
 }
+\keyword{internal}

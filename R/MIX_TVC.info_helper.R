@@ -23,6 +23,8 @@
 #' @return A list with each sub-list containing a list of OpenMx paths and parameters for the TVC and an OpenMx path for the
 #' state effect of the TVC on the corresponding longitudinal outcome.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxAlgebra mxAlgebraFromString
 #'
 getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, starts){

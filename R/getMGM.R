@@ -10,11 +10,11 @@
 #' variable for the corresponding outcome variable at each study wave.
 #' @param y_var A vector of strings, with each element representing the prefix for column names corresponding to a
 #' particular outcome variable at each study wave.
-#' @param curveFun A string specifying the functional form of the growth curve. Supported options for \code{y_model =
-#' "LGCM"} include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
-#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported
-#' options for \code{y_model = "LCSM"} include: \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
-#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"nonparametric"} (or \code{"NonP"}).
+#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"} include:
+#' \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
+#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for
+#' \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
+#' and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param intrinsic A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. Default is
 #' \code{TRUE}.
 #' @param records A list of numeric vectors, with each vector specifying the indices of the observed study waves for

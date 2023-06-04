@@ -24,6 +24,8 @@
 #' growth curve models, and individual time points and individual time lags (intervals) between adjacent time points
 #' for latent change score models) and factor loadings of a univariate longitudinal outcome.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxMatrix mxAlgebraFromString mxAlgebra
 #'
 getUNI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, records){

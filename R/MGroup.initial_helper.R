@@ -52,7 +52,8 @@
 #' @return
 #' A list containing initial values for each class in the specified model.
 #'
-# Define the getMGroup.initial function with its required arguments
+#' @keywords internal
+#'
 getMGroup.initial <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, curveFun, records, m_var, x_var,
                               x_type, TVC, decompose, growth_TIC, res_scale, res_cor){
   # Initialize an empty list for starts

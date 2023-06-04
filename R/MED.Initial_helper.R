@@ -28,6 +28,8 @@
 #' @return A list containing the initial values for parameters related to growth factors and path coefficients of a
 #' longitudinal mediation model.
 #'
+#' @keywords internal
+#'
 getMED.initial <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, records, res_scale, res_cor){
   # Define the number of growth factors for each functional form
   nGF <- ifelse(curveFun %in% c("linear", "LIN"), 2, 3)

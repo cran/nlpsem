@@ -36,3 +36,4 @@ latent growth curve model or a multivariate latent change score model.
 This function computes and returns a data frame containing point estimates and standard errors for the parameters of
 a multivariate latent growth curve model or a multivariate latent change score model.
 }
+\keyword{internal}

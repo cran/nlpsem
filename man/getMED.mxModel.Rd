@@ -56,3 +56,4 @@ A pre-optimized mxModel for a longitudinal mediation model.
 \description{
 This function builds up an object of mxModel for a longitudinal mediation model with user-specified functional form.
 }
+\keyword{internal}

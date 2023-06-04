@@ -92,3 +92,4 @@ This function computes the initial values for the parameters for a longitudinal 
 models or latent change score models with a time varying covariate, (4) multivariate latent growth curve models or multivariate
 latent change score models, (5) longitudinal mediation models. For the first three submodels, time-invariant covariates are allowed.
 }
+\keyword{internal}

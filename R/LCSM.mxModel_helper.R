@@ -23,6 +23,8 @@
 #'
 #' @return A pre-optimized mxModel for a Latent Change Score Model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxModel mxAlgebra mxMatrix mxData
 #'
 getLCSM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, growth_TIC, starts){

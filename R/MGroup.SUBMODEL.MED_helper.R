@@ -30,6 +30,8 @@
 #'
 #' @return A list of manifest and latent variables and paths for an mxModel object.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxModel mxAlgebraFromString mxMatrix
 #'
 getsub.MED_m <- function(dat, nClass, grp_var, t_var, y_var, curveFun, records, m_var, x_var, x_type, starts, res_cor){

@@ -34,6 +34,8 @@
 #'
 #' @return A dataframe containing point estimates and standard errors for the parameters of interest for a mixture model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxEvalByName mxSE diag2vec
 #'
 getMGroup.output <- function(model, nClass, sub_Model, y_var, curveFun, x_type, records, growth_TIC,

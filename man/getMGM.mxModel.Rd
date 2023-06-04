@@ -53,3 +53,4 @@ score model.
 This function builds up an object of mxModel for a multivariate latent growth curve model or a multivariate latent
 change score model with user-specified functional form (including whether intrinsically nonlinear).
 }
+\keyword{internal}

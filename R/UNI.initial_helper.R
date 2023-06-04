@@ -38,6 +38,8 @@
 #' }
 #' Each of these elements is a numeric vector or matrix containing the initial parameter estimates.
 #'
+#' @keywords internal
+#'
 #' @importFrom stats var cov lm na.exclude
 #'
 getUNI.initial <- function(dat, t_var, y_var, curveFun, records, growth_TIC, res_scale){

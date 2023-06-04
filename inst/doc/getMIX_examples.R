@@ -1,0 +1,165 @@
+## ---- include = FALSE---------------------------------------------------------
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+## ---- message = FALSE---------------------------------------------------------
+library(OpenMx)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(nlpsem)
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+
+## ---- message = FALSE---------------------------------------------------------
+load(system.file("extdata", "getMIX_examples.RData", package = "nlpsem"))
+
+## ---- message = FALSE, eval = FALSE-------------------------------------------
+#  # Load ECLS-K (2011) data
+#  data("RMS_dat")
+#  RMS_dat0 <- RMS_dat
+#  # Re-baseline the data so that the estimated initial status is for the
+#  # starting point of the study
+#  baseT <- RMS_dat0$T1
+#  RMS_dat0$T1 <- RMS_dat0$T1 - baseT
+#  RMS_dat0$T2 <- RMS_dat0$T2 - baseT
+#  RMS_dat0$T3 <- RMS_dat0$T3 - baseT
+#  RMS_dat0$T4 <- RMS_dat0$T4 - baseT
+#  RMS_dat0$T5 <- RMS_dat0$T5 - baseT
+#  RMS_dat0$T6 <- RMS_dat0$T6 - baseT
+#  RMS_dat0$T7 <- RMS_dat0$T7 - baseT
+#  RMS_dat0$T8 <- RMS_dat0$T8 - baseT
+#  RMS_dat0$T9 <- RMS_dat0$T9 - baseT
+#  # Standardize time-invariant covariates (TICs)
+#  ## ex1 and ex2 are standardized growth TICs in models
+#  RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
+#  RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
+#  ## gx1 and gx2 are standardized cluster TICs in models
+#  RMS_dat0$gx1 <- scale(RMS_dat0$INCOME)
+#  RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
+#  xstarts <- mean(baseT)
+
+## ---- message = FALSE, eval = FALSE-------------------------------------------
+#  Math_BLS_LGCM1 <- getLGCM(
+#    dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
+#    records = 1:9, res_scale = 0.1
+#    )
+#  Math_BLS_LGCM2 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM", y_var = "M",
+#    t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
+#    res_scale = list(0.3, 0.3)
+#  )
+#  set.seed(20191029)
+#  Math_BLS_LGCM3 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM", y_var = "M",
+#    t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
+#    res_scale = list(0.3, 0.3, 0.3), tries = 10
+#  )
+
+## -----------------------------------------------------------------------------
+Figure1 <- getFigure(
+  model = Math_BLS_LGCM1, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
+  y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
+  m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
+  outcome = "Mathematics"
+)
+print(Figure1)
+Figure2 <- getFigure(
+  model = Math_BLS_LGCM2, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
+  y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
+  m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
+  outcome = "Mathematics"
+)
+print(Figure2)
+Figure3 <- getFigure(
+  model = Math_BLS_LGCM3, nClass = 3, cluster_TIC = NULL, sub_Model = "LGCM",
+  y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
+  m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
+  outcome = "Mathematics"
+)
+print(Figure3)
+getSummary(model_list = list(Math_BLS_LGCM1, Math_BLS_LGCM2, Math_BLS_LGCM3),
+           HetModels = TRUE)
+
+## ---- message = FALSE, eval = FALSE-------------------------------------------
+#  paraBLS_LGCM.r <- c(
+#    "mueta0", "mueta1", "mueta2", "knot",
+#    paste0("psi", c("00", "01", "02", "11", "12", "22")), "residuals"
+#    )
+#  set.seed(20191029)
+#  Math_BLS_LGCM3_M1 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM", y_var = "M",
+#    t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
+#    res_scale = list(0.3, 0.3, 0.3), tries = 10, paramOut = TRUE,
+#    names = paraBLS_LGCM.r
+#  )
+#  set.seed(20191029)
+#  Math_BLS_LGCM3_M2 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM",
+#    cluster_TIC = c("gx1", "gx2"), y_var = "M", t_var = "T", records = 1:9,
+#    curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
+#    tries = 10, paramOut = TRUE, names = paraBLS_LGCM.r
+#  )
+#  paraBLS.TIC_LGCM.r <- c(
+#    "alpha0", "alpha1", "alpha2", "knot",
+#    paste0("psi", c("00", "01", "02", "11", "12", "22")), "residuals",
+#    paste0("beta1", 0:2), paste0("beta2", 0:2),
+#    paste0("mux", 1:2), paste0("phi", c("11", "12", "22")),
+#    "mueta0", "mueta1", "mueta2")
+#  set.seed(20191029)
+#  Math_BLS_LGCM3_M3 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM", y_var = "M",
+#    t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
+#    res_scale = list(0.3, 0.3, 0.3), growth_TIC = c("ex1", "ex2"), tries = 10,
+#    paramOut = TRUE, names = paraBLS.TIC_LGCM.r
+#  )
+#  set.seed(20191029)
+#  Math_BLS_LGCM3_M4 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM",
+#    cluster_TIC = c("gx1", "gx2"), y_var = "M", t_var = "T", records = 1:9,
+#    curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
+#    growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE,
+#    names = paraBLS.TIC_LGCM.r
+#    )
+
+## -----------------------------------------------------------------------------
+Figure4 <- getFigure(
+  model = Math_BLS_LGCM3_M4[[1]], nClass = 3, cluster_TIC = c("gx1", "gx2"), 
+  sub_Model = "LGCM", y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T",
+  records = 1:9, m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, 
+  xlab = "Month", outcome = "Mathematics"
+)
+print(Figure4)
+
+## ---- message = FALSE, eval = FALSE-------------------------------------------
+#  paraBLS_PLGCM.r <- c(
+#    "Y_mueta0", "Y_mueta1", "Y_mueta2", "Y_knot",
+#    paste0("Y_psi", c("00", "01", "02", "11", "12", "22")), "Y_res",
+#    "Z_mueta0", "Z_mueta1", "Z_mueta2", "Z_knot",
+#    paste0("Z_psi", c("00", "01", "02", "11", "12", "22")), "Z_res",
+#    paste0("YZ_psi", c("00", "10", "20", "01", "11", "21", "02", "12", "22")),
+#    "YZ_res"
+#    )
+#  set.seed(20191029)
+#  RM_BLS_PLGCM3 <- getMIX(
+#    dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "MGM",
+#    cluster_TIC = c("gx1", "gx2"), t_var = c("T", "T"), y_var = c("R", "M"),
+#    curveFun = "BLS", intrinsic = FALSE, records = list(1:9, 1:9),
+#    res_scale = list(c(0.3, 0.3), c(0.3, 0.3), c(0.3, 0.3)),
+#    res_cor = list(0.3, 0.3, 0.3), y_model = "LGCM", tries = 10, paramOut = TRUE,
+#    names = paraBLS_PLGCM.r
+#    )
+
+## -----------------------------------------------------------------------------
+Figure5 <- getFigure(
+  model = RM_BLS_PLGCM3[[1]], nClass = 3, cluster_TIC = c("gx1", "gx2"), 
+  sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", y_model = "LGCM",
+  t_var = c("T", "T"), records = list(1:9, 1:9), m_var = NULL, x_var = NULL, 
+  x_type = NULL, xstarts = xstarts, xlab = "Month", 
+  outcome = c("Reading", "Mathematics")
+)
+print(Figure5[[1]])
+print(Figure5[[2]])
+

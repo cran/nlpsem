@@ -54,3 +54,4 @@ A list of manifest and latent variables and paths for an mxModel object.
 \description{
 This function defines latent growth curve models as class-specific models (submodels) for a longitudinal multiple group model.
 }
+\keyword{internal}

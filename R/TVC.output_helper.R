@@ -29,6 +29,8 @@
 #' curve model or a latent change score model with a time-varying covariate and time-invariant covariates (if
 #' any).
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxEval mxSE diag2vec
 #'
 getTVC.output <- function(model, curveFun, records, y_model, decompose, growth_TIC, names){

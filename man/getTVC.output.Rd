@@ -44,3 +44,4 @@ This function computes and returns a data frame containing point estimates and s
 parameters of a latent growth curve model or a latent change score model with a time-varying covariate
 and time-invariant covariates (if any)
 }
+\keyword{internal}

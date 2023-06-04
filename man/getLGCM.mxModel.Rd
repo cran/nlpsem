@@ -49,3 +49,4 @@ A pre-optimized mxModel for a Latent Growth Curve Model.
 his function builds up an object of mxModel for a latent growth curve model with user-specified
 functional form (including whether intrinsically nonlinear) with time-invariant covariates (if any).
 }
+\keyword{internal}

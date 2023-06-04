@@ -27,6 +27,8 @@
 #'
 #' @return A pre-optimized mxModel for a longitudinal mediation model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxModel mxAlgebra mxMatrix mxData
 #'
 getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, records, starts, res_cor){

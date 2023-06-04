@@ -74,21 +74,21 @@
 #' RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
 #' BL_mean <- mean(RMS_dat0[, "R1"])
 #' BL_var <- var(RMS_dat0[, "R1"])
-#' RMS_dat0$R1 <- (RMS_dat0$R1 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R2 <- (RMS_dat0$R2 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R3 <- (RMS_dat0$R3 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R4 <- (RMS_dat0$R4 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R5 <- (RMS_dat0$R5 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R6 <- (RMS_dat0$R6 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R7 <- (RMS_dat0$R7 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R8 <- (RMS_dat0$R8 - BL_mean)/sqrt(BL_var)
-#' RMS_dat0$R9 <- (RMS_dat0$R9 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs1 <- (RMS_dat0$R1 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs2 <- (RMS_dat0$R2 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs3 <- (RMS_dat0$R3 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs4 <- (RMS_dat0$R4 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs5 <- (RMS_dat0$R5 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs6 <- (RMS_dat0$R6 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs7 <- (RMS_dat0$R7 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs8 <- (RMS_dat0$R8 - BL_mean)/sqrt(BL_var)
+#' RMS_dat0$Rs9 <- (RMS_dat0$R9 - BL_mean)/sqrt(BL_var)
 #' \donttest{
 #' # Fit bilinear spline latent growth curve model (fixed knot) with a time-varying
 #' # reading ability for mathematics development
 #' BLS_TVC_LGCM1 <- getTVCmodel(
 #'  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-#'  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 0,  growth_TIC = NULL,
+#'  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 0,  growth_TIC = NULL,
 #'  res_scale = 0.1
 #'  )
 #' # Fit negative exponential latent growth curve model (random ratio) with a
@@ -106,8 +106,9 @@
 #'   "covBL1", "covBL2", "kappa", "Cov_XYres")
 #' set.seed(20191029)
 #' EXP_TVCslp_LGCM3.f <- getTVCmodel(
-#'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "EXP", intrinsic = TRUE, records = 1:9,
-#'   y_model = "LGCM", TVC = "R", decompose = 1, growth_TIC = c("ex1", "ex2"), res_scale = c(0.1, 0.1),
+#'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "EXP", intrinsic = TRUE,
+#'   records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 1,
+#'   growth_TIC = c("ex1", "ex2"), res_scale = c(0.1, 0.1),
 #'   res_cor = 0.3, tries = 10, paramOut = TRUE, names = paraEXP_LGCM3.f
 #' )
 #' EXP_TVCslp_LGCM3.f[[2]]

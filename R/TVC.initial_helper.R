@@ -38,6 +38,8 @@
 #' coefficients (if any) for a latent growth curve model or a latent change score model with a time-varying covariate and
 #' time-invariant covariates (if any).
 #'
+#' @keywords internal
+#'
 #' @importFrom stats var cov lm na.exclude
 #'
 getTVC.initial <- function(dat, t_var, y_var, curveFun, records, growth_TIC, TVC, decompose, res_scale, res_cor){

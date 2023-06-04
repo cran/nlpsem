@@ -63,3 +63,4 @@ A list of manifest and latent variables and paths for an mxModel object.
 This function defines longitudinal mediation models as class-specific models (submodels) for a longitudinal multiple group
 model.
 }
+\keyword{internal}

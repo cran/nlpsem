@@ -53,3 +53,4 @@ loadings of a longitudinal mediation model.
 \description{
 This function specifies the factor loadings for a longitudinal mediation model with given functional form.
 }
+\keyword{internal}

@@ -50,3 +50,4 @@ A list of manifest and latent variables and paths for an mxModel object.
 \description{
 This function defines latent change score models as class-specific models (submodels) for a longitudinal mixture model.
 }
+\keyword{internal}

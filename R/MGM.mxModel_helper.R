@@ -28,6 +28,8 @@
 #' @return A pre-optimized mxModel for a multivariate latent growth curve model or a multivariate latent change
 #' score model.
 #'
+#' @keywords internal
+#'
 getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_model, starts){
   y_var_L <- tolower(y_var)
   # Define manifest variables

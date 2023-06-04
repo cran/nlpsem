@@ -44,3 +44,4 @@ loadings of multivariate longitudinal outcomes.
 This function specifies the factor loadings for a mixture model with MGM as submodels. The longitudinal outcomes are fit
 by Latent Growth Curve Models or a Latent Change Score Models.
 }
+\keyword{internal}

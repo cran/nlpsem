@@ -35,3 +35,4 @@ TVC, and KAPPA is an OpenMx path for the temporal effect of the TVC on the corre
 This function constructs the OpenMx model paths and parameters for a TVC and its relationship with the parameters
 related to growth factors of a longitudinal outcome.
 }
+\keyword{internal}

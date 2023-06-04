@@ -38,3 +38,4 @@ for latent change score models) and factor loadings of a multivariate longitudin
 This function specifies the factor loadings for a multivariate longitudinal outcomes with a given functional form.
 The longitudinal outcomes are fit by Latent Growth Curve Models or a Latent Change Score Models.
 }
+\keyword{internal}

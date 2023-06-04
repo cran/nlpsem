@@ -38,3 +38,4 @@ state effect of the TVC on the corresponding longitudinal outcome.
 This function constructs the OpenMx model paths and parameters for a TVC and its relationship with the parameters
 related to growth factors of a longitudinal outcome.
 }
+\keyword{internal}

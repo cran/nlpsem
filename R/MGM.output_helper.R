@@ -22,6 +22,8 @@
 #' @return A data frame containing the point estimates and standard errors for parameters of a multivariate
 #' latent growth curve model or a multivariate latent change score model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxEval mxEvalByName mxSE diag2vec
 #'
 getMGM.output <- function(model, y_var, records, curveFun, y_model, names){

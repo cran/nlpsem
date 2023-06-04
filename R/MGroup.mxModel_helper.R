@@ -53,6 +53,8 @@
 #'
 #' @return A pre-optimized mxModel for a longitudinal mixture model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxFitFunctionAlgebra
 #'
 getMGroup.mxModel <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, curveFun, intrinsic, records,

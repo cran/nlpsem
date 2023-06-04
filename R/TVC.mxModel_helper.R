@@ -38,6 +38,8 @@
 #' @return A pre-optimized mxModel for a latent growth curve model or a latent change score model with a
 #' time-varying covariate and time-invariant covariates (if any).
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxPath mxModel mxAlgebra mxMatrix
 #'
 getTVC.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_model, TVC, decompose,

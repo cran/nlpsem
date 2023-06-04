@@ -34,3 +34,4 @@ A data frame containing the point estimates and standard errors for parameters o
 This function computes and returns a data frame containing point estimates and standard errors for the parameters of
 a longitudinal mediation model.
 }
+\keyword{internal}

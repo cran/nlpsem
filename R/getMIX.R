@@ -27,11 +27,11 @@
 #' @param y_var A string defining the prefix of the column names corresponding to the outcome variable for each study wave. This is applicable
 #' when \code{sub_Model} is not \code{"MGM"}. For \code{sub_Model} being \code{"MGM"}, \code{y_var} should be a string vector where each element
 #' corresponds to the prefix of the column names for each outcome variable across the study waves.
-#' @param curveFun A string specifying the functional form of the growth curve. Supported options for \code{y_model = "LGCM"} include:
+#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"} include:
 #' \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
 #' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for
-#' \code{y_model = "LCSM"} include: \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
-#' \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"nonparametric"} (or \code{"NonP"}).
+#' \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
+#' and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param intrinsic A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. By default, this is
 #' \code{NULL} as it is unnecessary when \code{sub_Model} is \code{"MED"}.
 #' @param y_model A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
@@ -149,9 +149,9 @@ getMIX <- function(dat, prop_starts, sub_Model, cluster_TIC = NULL, t_var, recor
       stop("An intrinsic nonlinear function should be one of the following: negative exponential, Jenss-Bayley, or bilinear spline!")
     }
   }
-  if (sub_Model %in% c("TVC", "MGM", "MED")){
+  if (I(sub_Model %in% c("MGM", "MED") | (sub_Model == "TVC" && decompose != 0))){
     if (is.null(res_cor)){
-      stop("Please specify res_cor if the sub_Model is TVC, MGM, or MED!")
+      stop("Please specify res_cor if the sub_Model is TVC (decomposed), MGM, or MED!")
     }
   }
   if (sub_Model %in% c("TVC", "MGM")){

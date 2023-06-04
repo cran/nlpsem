@@ -17,6 +17,8 @@
 #'
 #' @return A data frame containing the derived individual growth factors from the raw data.
 #'
+#' @keywords internal
+#'
 #' @importFrom stats coef nls
 #'
 getUNI.GF <- function(dat_traj, dat_time, nT, curveFun){

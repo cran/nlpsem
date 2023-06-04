@@ -98,3 +98,4 @@ A pre-optimized mxModel for a longitudinal mixture model.
 This function builds up an object of mxModel for a longitudinal multiple group model with class-specific models and
 functional form (including whether intrinsically nonlinear).
 }
+\keyword{internal}

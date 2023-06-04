@@ -19,6 +19,8 @@
 #'
 #' @return A data frame containing the point estimates and standard errors for parameters of a longitudinal mediation model.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxEval mxSE
 #'
 getMED.output <- function(model, y_var, m_var, x_type, x_var, curveFun, names){

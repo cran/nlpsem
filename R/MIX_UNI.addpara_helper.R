@@ -33,6 +33,8 @@
 #' @return A list containing the specification of the means and variances of interval-specific slopes, interval-
 #' specific changes, and values of change-from-baseline for latent change score models.
 #'
+#' @keywords internal
+#'
 #' @importFrom OpenMx mxMatrix mxAlgebra mxAlgebraFromString diag2vec
 #'
 getMIX_UNI.addpara <- function(dat, nClass, curveFun, intrinsic, t_var, records, growth_TIC, decompose,
