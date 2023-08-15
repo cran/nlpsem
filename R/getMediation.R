@@ -106,10 +106,11 @@
 #'   res_scale = c(0.1, 0.1, 0.1), res_cor = c(0.3, 0.3), tries = 10, paramOut = TRUE,
 #'   names = paraMed3_BLS
 #'   )
-#' Med3_LGCM_BLS[[2]]
+#' printTable(Med3_LGCM_BLS)
 #' }
 #'
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getMediation <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, records, starts = NULL, res_scale = NULL,
                          res_cor = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
@@ -145,7 +146,10 @@ getMediation <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, reco
   if(paramOut){
     MED_output <- getMED.output(model = model, y_var = y_var, m_var = m_var, x_type = x_type, x_var = x_var,
                                 curveFun = curveFun, names = names)
-    return(list(model, MED_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = MED_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }

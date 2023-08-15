@@ -46,20 +46,21 @@
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "linear",
 #'   intrinsic = FALSE, records = 1:9, growth_TIC = NULL, res_scale = 0.1
 #' )
-#' getIndFS(model = LIN_LGCM, FS_type = "Regression")
+#' getIndFS(model = LIN_LGCM@mxOutput, FS_type = "Regression")
 #' # Fit bilinear spline latent growth curve model (random knots) with time-invariant covariates for
 #' # mathematics development
 #' ## Fit the model
 #' BLS_LGCM.TIC_f <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS",
 #'                           intrinsic = TRUE, records = 1:9, growth_TIC = c("ex1", "ex2"),
 #'                           res_scale = 0.1)
-#' ## Output point estimate and standard errors
-#' getIndFS(model = BLS_LGCM.TIC_f, FS_type = "Regression")
+#' getIndFS(model = BLS_LGCM.TIC_f@mxOutput, FS_type = "Regression")
 #' }
 #'
 #' @importFrom OpenMx mxFactorScores
+#' @importFrom methods new
 #'
 getIndFS <- function(model, FS_type = "Regression"){
   out <- mxFactorScores(model = model, type = FS_type)
-  return(list(scores_est = out[, , 1], scores_se <- out[, , 2]))
+  FSOut <- new("FSOutput", scores_est = out[, , 1], scores_se = out[, , 2])
+  return(FSOut)
 }

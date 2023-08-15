@@ -60,7 +60,7 @@
 #'   records = 1:9, res_scale = 0.1, paramOut = TRUE, names = paraBLS_LGCM.r)
 #' ## Output point estimate and standard errors
 #' getEstimateStats(
-#'   est_in = BLS_LGCM_r[[2]], CI_type = "Wald"
+#'   est_in = BLS_LGCM_r@Estimates, CI_type = "Wald"
 #'   )
 #' # Fit bilinear spline latent growth curve model (random knots) with time-invariant covariates for
 #' # mathematics development
@@ -78,12 +78,13 @@
 #'   )
 #' ## Output point estimate and standard errors
 #' getEstimateStats(
-#'   model = BLS_LGCM.TIC_f[[1]], est_in = BLS_LGCM.TIC_f[[2]], CI_type = "all", rep = 1000
+#'   model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 1000
 #'   )
 #' }
 #' @importFrom OpenMx omxGetParameters mxTryHard mxModel mxCI mxBootstrap
 #' @importFrom dplyr %>% select summarize_all
 #' @importFrom stats quantile
+#' @importFrom methods new
 #'
 getEstimateStats <- function(model = NULL, est_in, p_values = TRUE, CI = TRUE, CI_type = "Wald", rep = NA,
                              conf.level = 0.95){
@@ -97,14 +98,14 @@ getEstimateStats <- function(model = NULL, est_in, p_values = TRUE, CI = TRUE, C
     if (CI_type == "Wald"){
       est_out_wald$wald_lbound <- round(est_in[, 2] - qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
       est_out_wald$wald_ubound <- round(est_in[, 2] + qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
-      return(list(wald = est_out_wald))
+      statOut <- new("StatsOutput", wald = est_out_wald)
     }
     else if (CI_type == "likelihood"){
       free_para <- omxGetParameters(model = model)
       model_CI <- mxTryHard(mxModel(model = model, mxCI(names(free_para))), intervals = TRUE)
       est_out_lik <- as.data.frame(round(model_CI$output$confidenceIntervals, 4))[, c(2, 1, 3)]
       names(est_out_lik) <- c("Estimate", "lik_lbound", "lik_ubound")
-      return(list(likelihood = est_out_lik))
+      statOut <- new("StatsOutput", likelihood = est_out_lik)
     }
     else if (CI_type == "bootstrap"){
       boot <- mxBootstrap(model, replications = rep)
@@ -117,7 +118,7 @@ getEstimateStats <- function(model = NULL, est_in, p_values = TRUE, CI = TRUE, C
                                          select(-name), 4))
       names(est_out_boot) <- c("Estimate", "boot_lbound", "boot_ubound")
       rownames(est_out_boot) <- row.names(boot_CI)
-      return(list(bootstrap = est_out_boot))
+      statOut <- new("StatsOutput", bootstrap = est_out_boot)
     }
     else if (CI_type == "all"){
       est_out_wald$wald_lbound <- round(est_in[, 2] - qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
@@ -136,8 +137,12 @@ getEstimateStats <- function(model = NULL, est_in, p_values = TRUE, CI = TRUE, C
                                          select(-name), 4))
       rownames(est_out_boot) <- row.names(boot_CI)
       names(est_out_boot) <- c("Estimate", "boot_lbound", "boot_ubound")
-      return(list(wald = est_out_wald, likelihood = est_out_lik, bootstrap = est_out_boot))
+      statOut <- new("StatsOutput", wald = est_out_wald, likelihood = est_out_lik, bootstrap = est_out_boot)
     }
   }
+  else if (!CI){
+    statOut <- new("StatsOutput", wald = est_out_wald)
+  }
+  return(statOut)
 }
 

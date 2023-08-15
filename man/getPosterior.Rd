@@ -56,7 +56,7 @@ MIX_BLS_LGCM_r <-  getMIX(
   intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3), growth_TIC = NULL, tries = 10
 )
 label1 <- getPosterior(
-  model = MIX_BLS_LGCM_r, nClass = 3, label = FALSE, cluster_TIC = NULL
+  model = MIX_BLS_LGCM_r@mxOutput, nClass = 3, label = FALSE, cluster_TIC = NULL
 )
 set.seed(20191029)
 MIX_BLS_LGCM.TIC_r <-  getMIX(
@@ -66,7 +66,7 @@ MIX_BLS_LGCM.TIC_r <-  getMIX(
   growth_TIC = c("ex1", "ex2"), tries = 10
 )
 label2 <- getPosterior(
-  model = MIX_BLS_LGCM.TIC_r, nClass = 3, label = FALSE, cluster_TIC = c("gx1", "gx2")
+  model = MIX_BLS_LGCM.TIC_r@mxOutput, nClass = 3, label = FALSE, cluster_TIC = c("gx1", "gx2")
 )
 }
 

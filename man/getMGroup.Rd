@@ -163,7 +163,7 @@ MGroup_BLS_LGCM.TIC_f <-  getMGroup(
   records = 1:9, curveFun = "BLS", intrinsic = TRUE, res_scale = list(0.3, 0.3),
   growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE, names = paraBLS.TIC_LGCM.f
 )
-MGroup_BLS_LGCM.TIC_f[[2]]
+printTable(MGroup_BLS_LGCM.TIC_f)
 }
 
 }

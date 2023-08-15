@@ -35,7 +35,7 @@
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
 #'   records = 1:9, res_scale = 0.1
 #'   )
-#' getSummary(model_list = list(BLS_LGCM1), HetModels = FALSE)
+#' getSummary(model_list = list(BLS_LGCM1@mxOutput), HetModels = FALSE)
 #' set.seed(20191029)
 #' BLS_LGCM2 <-  getMIX(
 #'   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM", cluster_TIC = NULL,
@@ -49,13 +49,15 @@
 #'   res_scale = list(0.3, 0.3, 0.3), growth_TIC = NULL, tries = 10
 #'   )
 #'
-#' getSummary(model_list = list(BLS_LGCM1, BLS_LGCM2, BLS_LGCM3), HetModels = TRUE)
+#' getSummary(model_list = list(BLS_LGCM1@mxOutput, BLS_LGCM2@mxOutput, BLS_LGCM3@mxOutput),
+#'   HetModels = TRUE)
 #' }
 #'
 #' @importFrom dplyr left_join
 #' @importFrom tidyr separate spread pivot_wider
 #' @importFrom stringr str_replace_all
 #' @importFrom stats AIC BIC
+#' @importFrom methods new
 #'
 getSummary <- function(model_list, HetModels = FALSE){
   if (HetModels){
@@ -91,7 +93,7 @@ getSummary <- function(model_list, HetModels = FALSE){
           }else{
             substring(model_list[[model]]$weightsV$labels[-1], 6)
           }
-          memebership <- getPosterior(model = model_list[[model]], nClass = nClass, cluster_TIC = cluster_TIC)$membership
+          memebership <- getPosterior(model = model_list[[model]], nClass = nClass, cluster_TIC = cluster_TIC)@membership
           prop <- paste0(table(memebership)/length(memebership) * 100, "%")
         }
         output0[[model]] <- data.frame(Model = paste0("Model", model),

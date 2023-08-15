@@ -106,10 +106,11 @@
 #'   records = 1:9, curveFun = "BLS", intrinsic = TRUE, res_scale = list(0.3, 0.3),
 #'   growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE, names = paraBLS.TIC_LGCM.f
 #' )
-#' MGroup_BLS_LGCM.TIC_f[[2]]
+#' printTable(MGroup_BLS_LGCM.TIC_f)
 #' }
 #'
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getMGroup <- function(dat, grp_var, sub_Model, t_var, records, y_var, curveFun, intrinsic = NULL, y_model = NULL,
                       m_var = NULL, x_var = NULL, x_type = NULL, TVC = NULL, decompose = NULL, growth_TIC = NULL,
@@ -177,7 +178,12 @@ getMGroup <- function(dat, grp_var, sub_Model, t_var, records, y_var, curveFun, 
     MGroup_output <- getMGroup.output(model = model, nClass = nClass, sub_Model = sub_Model, y_var = y_var,
                                       curveFun = curveFun, x_type = x_type, records = records, growth_TIC = growth_TIC,
                                       y_model = y_model, decompose = decompose, names = names)
-    return(list(model, MGroup_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = MGroup_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }
+
+

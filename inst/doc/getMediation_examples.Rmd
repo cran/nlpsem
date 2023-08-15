@@ -76,7 +76,7 @@ Med2_LGCM_BLS <- getMediation(
 ```
 
 ```{r}
-Med2_LGCM_BLS[[2]]
+Med2_LGCM_BLS@Estimates
 ```
 
 ## Example 2: Fit  longitudinal mediation model with a bilinear spline functional form to assess how the development of reading ability influences the development of science ability, mediated through the development of mathematics ability.
@@ -106,5 +106,5 @@ Med3_LGCM_BLS <- getMediation(
 ```
 
 ```{r}
-Med3_LGCM_BLS[[2]]
+Med3_LGCM_BLS@Estimates
 ```

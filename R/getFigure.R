@@ -72,12 +72,12 @@
 #' BLS_LGCM1 <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS",
 #'                      intrinsic = FALSE, records = 1:9, res_scale = 0.1)
 #' Figure1 <- getFigure(
-#'   model = BLS_LGCM1, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
+#'   model = BLS_LGCM1@mxOutput, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
 #'   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
 #'   m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
 #'   outcome = "Mathematics"
 #' )
-#' print(Figure1)
+#' show(Figure1)
 #' # Plot mixture LGCM model
 #' BLS_LGCM2 <-  getMIX(
 #'   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM",
@@ -85,12 +85,12 @@
 #'   curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
 #' )
 #' Figure2 <- getFigure(
-#'   model = BLS_LGCM2, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
+#'   model = BLS_LGCM2@mxOutput, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
 #'   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
 #'   m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
 #'   outcome = "Mathematics"
 #' )
-#' print(Figure2)
+#' show(Figure2)
 #' }
 #'
 getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, sub_Model, y_var,
@@ -113,14 +113,14 @@ getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, 
                            sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var,
                            curveFun = curveFun, y_model = sub_Model, xstarts = xstarts, xlab = xlab,
                            outcome = outcome)
-      return(figures)
+      output <- list(figures)
     }
     else if (sub_Model == "TVC"){
       figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                            sub_Model = sub_Model, t_var = t_var, records = records,
-                           y_var = y_var, curveFun = curveFun, y_model = y_model, xstarts = xstarts, xlab = xlab,
+                           sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var,
+                           curveFun = curveFun, y_model = y_model, xstarts = xstarts, xlab = xlab,
                            outcome = outcome)
-      return(figures)
+      output <- list(figures)
     }
     else if (sub_Model == "MGM"){
       figures_L <- list()
@@ -130,7 +130,7 @@ getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, 
                                        records = records[[traj]], y_var = y_var[traj], curveFun = curveFun,
                                        y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome)
       }
-      return(figures_L)
+      output <- figures_L
     }
     else if (sub_Model == "MED"){
       figures_L <- list()
@@ -152,21 +152,22 @@ getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, 
                                          y_model = "LGCM", xstarts = xstarts, xlab = xlab, outcome = outcome)
         }
       }
+      output <- figures_L
     }
   }
   else if (!is.null(nClass)){
     if (sub_Model %in% c("LGCM", "LCSM")){
       figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                            sub_Model = sub_Model, t_var = t_var, records = records,
-                           y_var = y_var, curveFun = curveFun, y_model = sub_Model, xstarts = xstarts, xlab = xlab,
-                           outcome = outcome)
-      return(figures)
+                           sub_Model = sub_Model, t_var = t_var, records = records,
+                           y_var = y_var, curveFun = curveFun, y_model = sub_Model, xstarts = xstarts,
+                           xlab = xlab, outcome = outcome)
+      output <- list(figures)
     }
     else if (sub_Model == "TVC"){
       figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
                            sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var, curveFun = curveFun,
                            y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome)
-      return(figures)
+      output <- list(figures)
     }
     else if (sub_Model == "MGM"){
       figures_L <- list()
@@ -176,7 +177,7 @@ getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, 
                                        records = records[[traj]], y_var = y_var[traj], curveFun = curveFun,
                                        y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome)
       }
-      return(figures_L)
+      output <- figures_L
     }
     else if (sub_Model == "MED"){
       figures_L <- list()
@@ -198,8 +199,10 @@ getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, 
                                          xlab = xlab, outcome = outcome)
         }
       }
+      output <- figures_L
     }
   }
-  return(figures_L)
+  figOut <- new("figOutput", figures = output)
+  return(figOut)
 }
 

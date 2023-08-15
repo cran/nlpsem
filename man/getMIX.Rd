@@ -171,7 +171,7 @@ MIX_BLS_LGCM.TIC_r <-  getMIX(
   growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE,
   names = paraBLS.TIC_LGCM.r
 )
-MIX_BLS_LGCM.TIC_r[[2]]
+printTable(MIX_BLS_LGCM.TIC_r)
 }
 
 }

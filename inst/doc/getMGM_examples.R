@@ -51,12 +51,11 @@ load(system.file("extdata", "getMGM_examples.RData", package = "nlpsem"))
 
 ## -----------------------------------------------------------------------------
 Figure1 <- getFigure(
-  model = RM_PLGCM.r[[1]], sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
+  model = RM_PLGCM.r@mxOutput, sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
   y_model = "LGCM", t_var = c("T", "T"), records = list(1:9, 1:9), xstarts = xstarts, 
   xlab = "Month", outcome = c("Reading", "Mathematics")
 )
-print(Figure1[[1]])
-print(Figure1[[2]])
+show(Figure1)
 
 ## ---- message = FALSE, eval = FALSE-------------------------------------------
 #  paraBLS_PLGCM_f <- c(
@@ -76,10 +75,9 @@ print(Figure1[[2]])
 
 ## -----------------------------------------------------------------------------
 Figure2 <- getFigure(
-  model = RM_PLGCM.f[[1]], sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
+  model = RM_PLGCM.f@mxOutput, sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
   y_model = "LGCM", t_var = c("T", "T"), records = list(1:9, 1:9), xstarts = xstarts, 
   xlab = "Month", outcome = c("Reading", "Mathematics")
 )
-print(Figure2[[1]])
-print(Figure2[[2]])
+show(Figure2)
 

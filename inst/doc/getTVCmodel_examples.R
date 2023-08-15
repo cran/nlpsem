@@ -73,19 +73,19 @@ load(system.file("extdata", "getTVCmodel_examples.RData", package = "nlpsem"))
 #    )
 
 ## -----------------------------------------------------------------------------
-getEstimateStats(est_in = Math_TVCslp_BLS_f[[2]], CI_type = "Wald")
+getEstimateStats(est_in = Math_TVCslp_BLS_f@Estimates, CI_type = "Wald")
 Figure1 <- getFigure(
-  model = Math_TVC_BLS_f, sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
+  model = Math_TVC_BLS_f@mxOutput, sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
   y_model = "LGCM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Mathematics"
 )
-print(Figure1)
+show(Figure1)
 Figure2 <- getFigure(
-  model = Math_TVCslp_BLS_f[[1]], sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
+  model = Math_TVCslp_BLS_f@mxOutput, sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
   y_model = "LGCM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Mathematics"
 )
-print(Figure2)
+show(Figure2)
 
 ## ---- message = FALSE, eval = FALSE-------------------------------------------
 #  paraBLS_TVC.r <- c(
@@ -117,21 +117,21 @@ print(Figure2)
 
 ## -----------------------------------------------------------------------------
 Figure3 <- getFigure(
-  model = Math_TVCslp_BLS_r[[1]], sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
+  model = Math_TVCslp_BLS_r@mxOutput, sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
   y_model = "LGCM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Mathematics"
 )
-print(Figure3)
+show(Figure3)
 Figure4 <- getFigure(
-  model = Math_TVCchg_BLS_r[[1]], sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
+  model = Math_TVCchg_BLS_r@mxOutput, sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
   y_model = "LGCM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Mathematics"
 )
-print(Figure4)
+show(Figure4)
 Figure5 <- getFigure(
-  model = Math_TVCchgBL_BLS_r[[1]], sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
+  model = Math_TVCchgBL_BLS_r@mxOutput, sub_Model = "TVC", y_var = "M", curveFun = "BLS", 
   y_model = "LGCM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Mathematics"
 )
-print(Figure5)
+show(Figure5)
 

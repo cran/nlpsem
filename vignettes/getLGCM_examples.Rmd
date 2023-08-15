@@ -70,7 +70,7 @@ Math_LGCM_BLS_r <- getLGCM(
 
 ```{r}
 getLRT(
-  full = Math_LGCM_BLS_f, reduced = Math_LGCM_BLS_r, boot = FALSE, replications = NA
+  full = Math_LGCM_BLS_f@mxOutput, reduced = Math_LGCM_BLS_r@mxOutput, boot = FALSE, replications = NA
   )
 ```
 
@@ -94,13 +94,14 @@ Math_LGCM_TIC_BLS_f <- getLGCM(
 ```
 
 ```{r}
-Math_LGCM_TIC_BLS_f[[2]]
-getFigure(
-  model = Math_LGCM_TIC_BLS_f[[1]], nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
+Math_LGCM_TIC_BLS_f@Estimates
+Figure1 <- getFigure(
+  model = Math_LGCM_TIC_BLS_f@mxOutput, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
   m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
   outcome = "Mathematics"
 )
+show(Figure1)
 ```
 
 In the provided output, the terms alpha0, alpha1, alpha2, and alphag denote the conditional mean values of the intercept, first slope, second slope, and knot on growth TICs. The terms mueta0, mueta1, mueta2, and mu_knot represent the mean values of the intercept, first slope, second slope, and knot. These corresponding values match as we've centered the growth TICs.

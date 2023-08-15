@@ -89,10 +89,11 @@
 #'   records = list(1:9, 1:9), y_model = "LGCM", res_scale = c(0.1, 0.1), res_cor = 0.3,
 #'   paramOut = TRUE, names = paraBLS_PLGCM.f
 #'   )
-#' BLS_PLGCM_f[[2]]
+#' printTable(BLS_PLGCM_f)
 #' }
 #'
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getMGM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, y_model, starts = NULL, res_scale = NULL,
                    res_cor = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
@@ -131,7 +132,11 @@ getMGM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, y_mod
   if(paramOut){
     MGM_output <- getMGM.output(model = model, y_var = y_var, records = records, curveFun = curveFun, y_model = y_model,
                                 names = names)
-    return(list(model, MGM_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = MGM_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }
+

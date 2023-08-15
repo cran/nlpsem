@@ -121,7 +121,7 @@ BLS_PLGCM_f <- getMGM(
   records = list(1:9, 1:9), y_model = "LGCM", res_scale = c(0.1, 0.1), res_cor = 0.3,
   paramOut = TRUE, names = paraBLS_PLGCM.f
   )
-BLS_PLGCM_f[[2]]
+printTable(BLS_PLGCM_f)
 }
 
 }

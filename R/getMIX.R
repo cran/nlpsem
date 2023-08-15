@@ -126,10 +126,11 @@
 #'   growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE,
 #'   names = paraBLS.TIC_LGCM.r
 #' )
-#' MIX_BLS_LGCM.TIC_r[[2]]
+#' printTable(MIX_BLS_LGCM.TIC_r)
 #' }
 #'
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getMIX <- function(dat, prop_starts, sub_Model, cluster_TIC = NULL, t_var, records, y_var, curveFun, intrinsic = NULL,
                    y_model = NULL, m_var = NULL, x_type = NULL, x_var = NULL, TVC = NULL, decompose = NULL,
@@ -199,7 +200,10 @@ getMIX <- function(dat, prop_starts, sub_Model, cluster_TIC = NULL, t_var, recor
     MIX_output <- getMIX.output(model = model, nClass = nClass, sub_Model = sub_Model, cluster_TIC = cluster_TIC,
                                 y_var = y_var, curveFun = curveFun, x_type = x_type, records = records,
                                 growth_TIC = growth_TIC, y_model = y_model, decompose = decompose, names = names)
-    return(list(model, MIX_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = MIX_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }

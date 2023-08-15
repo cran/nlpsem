@@ -137,7 +137,7 @@ Med3_LGCM_BLS <- getMediation(
   res_scale = c(0.1, 0.1, 0.1), res_cor = c(0.3, 0.3), tries = 10, paramOut = TRUE,
   names = paraMed3_BLS
   )
-Med3_LGCM_BLS[[2]]
+printTable(Med3_LGCM_BLS)
 }
 
 }

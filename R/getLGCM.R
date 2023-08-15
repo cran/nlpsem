@@ -87,10 +87,11 @@
 #'   paramOut = TRUE, names = paraBLS.TIC_LGCM.f
 #' )
 #' ## Output point estimate and standard errors
-#' BLS_LGCM.TIC_f[[2]]
+#' printTable(BLS_LGCM.TIC_f)
 #' }
 #'
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getLGCM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, growth_TIC = NULL, starts = NULL,
                     res_scale = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
@@ -124,7 +125,10 @@ getLGCM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, grow
   ## Print out the point estimates and standard errors for the parameters of interest
   if(paramOut){
     LGCM_output <- getLGCM.output(model = model, growth_TIC = growth_TIC, names = names)
-    return(list(model, LGCM_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = LGCM_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }

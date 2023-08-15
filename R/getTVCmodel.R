@@ -111,10 +111,11 @@
 #'   growth_TIC = c("ex1", "ex2"), res_scale = c(0.1, 0.1),
 #'   res_cor = 0.3, tries = 10, paramOut = TRUE, names = paraEXP_LGCM3.f
 #' )
-#' EXP_TVCslp_LGCM3.f[[2]]
+#' printTable(EXP_TVCslp_LGCM3.f)
 #' }
 #'
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getTVCmodel <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, y_model, TVC, decompose,
                         growth_TIC = NULL, starts = NULL, res_scale = NULL, res_cor = NULL, tries = NULL,
@@ -152,7 +153,11 @@ getTVCmodel <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, 
   if(paramOut){
     TVC_output <- getTVC.output(model = model, curveFun = curveFun, records = records, y_model = y_model,
                                 decompose = decompose, growth_TIC = growth_TIC, names = names)
-    return(list(model, TVC_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = TVC_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }
+

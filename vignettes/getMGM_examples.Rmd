@@ -71,12 +71,11 @@ RM_PLGCM.r <- getMGM(
 
 ```{r}
 Figure1 <- getFigure(
-  model = RM_PLGCM.r[[1]], sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
+  model = RM_PLGCM.r@mxOutput, sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
   y_model = "LGCM", t_var = c("T", "T"), records = list(1:9, 1:9), xstarts = xstarts, 
   xlab = "Month", outcome = c("Reading", "Mathematics")
 )
-print(Figure1[[1]])
-print(Figure1[[2]])
+show(Figure1)
 ```
 
 ## Example 2: Fit multivariate bilinear spline LGCMs with random knots to evaluate the development of reading and mathematics ability from Kindergarten to Grade 5. 
@@ -99,11 +98,10 @@ RM_PLGCM.f <- getMGM(
 
 ```{r}
 Figure2 <- getFigure(
-  model = RM_PLGCM.f[[1]], sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
+  model = RM_PLGCM.f@mxOutput, sub_Model = "MGM", y_var = c("R", "M"), curveFun = "BLS", 
   y_model = "LGCM", t_var = c("T", "T"), records = list(1:9, 1:9), xstarts = xstarts, 
   xlab = "Month", outcome = c("Reading", "Mathematics")
 )
-print(Figure2[[1]])
-print(Figure2[[2]])
+show(Figure2)
 ```
 

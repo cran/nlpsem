@@ -150,7 +150,7 @@ EXP_TVCslp_LGCM3.f <- getTVCmodel(
   growth_TIC = c("ex1", "ex2"), res_scale = c(0.1, 0.1),
   res_cor = 0.3, tries = 10, paramOut = TRUE, names = paraEXP_LGCM3.f
 )
-EXP_TVCslp_LGCM3.f[[2]]
+printTable(EXP_TVCslp_LGCM3.f)
 }
 
 }

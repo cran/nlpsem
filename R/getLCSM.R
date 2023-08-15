@@ -75,6 +75,7 @@
 #'   )
 #' }
 #' @importFrom OpenMx mxTryHard mxRun
+#' @importFrom methods new
 #'
 getLCSM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, growth_TIC = NULL, starts = NULL,
                     res_scale = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
@@ -108,7 +109,10 @@ getLCSM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, grow
   ## Print out the point estimates and standard errors for the parameters of interest
   if(paramOut){
     LCSM_output <- getLCSM.output(model = model, curveFun = curveFun, growth_TIC = growth_TIC, names = names)
-    return(list(model, LCSM_output))
+    model <- new("myMxOutput", mxOutput = model, Estimates = LCSM_output)
+  }
+  else{
+    model <- new("myMxOutput", mxOutput = model)
   }
   return(model)
 }

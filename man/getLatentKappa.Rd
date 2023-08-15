@@ -51,7 +51,7 @@ MIX_BLS_LGCM_r <-  getMIX(
 )
 ## Membership of each individual from growth mixture model with no TICs
 label1 <- getPosterior(
-  model = MIX_BLS_LGCM_r, nClass = 3, label = FALSE, cluster_TIC = NULL
+  model = MIX_BLS_LGCM_r@mxOutput, nClass = 3, label = FALSE, cluster_TIC = NULL
 )
 set.seed(20191029)
 ## Fit a growth mixture model with growth TICs and cluster TICs
@@ -63,11 +63,11 @@ MIX_BLS_LGCM.TIC_r <-  getMIX(
 )
 ## Membership of each individual from growth mixture model with growth TICs and cluster TICs
 label2 <- getPosterior(
-  model = MIX_BLS_LGCM.TIC_r, nClass = 3, label = FALSE,
+  model = MIX_BLS_LGCM.TIC_r@mxOutput, nClass = 3, label = FALSE,
   cluster_TIC = c("gx1", "gx2")
 )
 ## Calcualte membership between two sets of labels
-getLatentKappa(label1 = label1$membership, label2 = label2$membership)
+getLatentKappa(label1 = label1@membership, label2 = label2@membership)
 }
 
 }

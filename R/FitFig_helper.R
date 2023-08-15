@@ -57,7 +57,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
   dat$ID <- 1:nrow(dat)
   if (!is.null(nClass)){
     if (is.null(grp_var)){
-      dat$Class <- getPosterior(model = model, nClass = nClass, cluster_TIC = cluster_TIC)[[2]]
+      dat$Class <- getPosterior(model = model, nClass = nClass, cluster_TIC = cluster_TIC)@membership
       class_props <- table(dat$Class)/length(dat$Class)
       class_labels <- paste0("Class ", seq_len(nClass), " (", round(class_props * 100, 1), "%)")
     }
@@ -330,7 +330,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
   else if (!is.null(nClass)){
     if (is.null(grp_var)){
         if (y_model == "LGCM"){
-          dat$Class <- getPosterior(model = model, nClass = nClass, cluster_TIC = cluster_TIC)[[2]]
+          dat$Class <- getPosterior(model = model, nClass = nClass, cluster_TIC = cluster_TIC)@membership
           dat_traj <- dat[, c("ID", "Class", paste0(y_var, records))]
           if (sub_Model %in% c("LGCM", "LCSM", "TVC")){
             y_var <- "Y"
@@ -458,7 +458,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           figure <- list(fig.status)
         }
         else if (y_model == "LCSM"){
-          dat$Class <- getPosterior(model = model, nClass = nClass, cluster_TIC = cluster_TIC)[[2]]
+          dat$Class <- getPosterior(model = model, nClass = nClass, cluster_TIC = cluster_TIC)@membership
           dat_chg <- cbind(dat[, c("ID", "Class")],
                            dat[, c(paste0(y_var, records[-1]))] - dat[, c(paste0(y_var, records[1]))])
           if (sub_Model %in% c("LGCM", "LCSM", "TVC")){

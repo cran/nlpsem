@@ -117,7 +117,7 @@ BLS_LGCM.TIC_f <- getLGCM(
   paramOut = TRUE, names = paraBLS.TIC_LGCM.f
 )
 ## Output point estimate and standard errors
-BLS_LGCM.TIC_f[[2]]
+printTable(BLS_LGCM.TIC_f)
 }
 
 }

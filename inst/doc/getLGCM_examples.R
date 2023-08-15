@@ -50,7 +50,7 @@ load(system.file("extdata", "getLGCM_examples.RData", package = "nlpsem"))
 
 ## -----------------------------------------------------------------------------
 getLRT(
-  full = Math_LGCM_BLS_f, reduced = Math_LGCM_BLS_r, boot = FALSE, replications = NA
+  full = Math_LGCM_BLS_f@mxOutput, reduced = Math_LGCM_BLS_r@mxOutput, boot = FALSE, replications = NA
   )
 
 ## ---- message = FALSE, eval = FALSE-------------------------------------------
@@ -69,11 +69,12 @@ getLRT(
 #    )
 
 ## -----------------------------------------------------------------------------
-Math_LGCM_TIC_BLS_f[[2]]
-getFigure(
-  model = Math_LGCM_TIC_BLS_f[[1]], nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
+Math_LGCM_TIC_BLS_f@Estimates
+Figure1 <- getFigure(
+  model = Math_LGCM_TIC_BLS_f@mxOutput, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
   m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
   outcome = "Mathematics"
 )
+show(Figure1)
 

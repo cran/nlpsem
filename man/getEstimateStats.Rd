@@ -71,7 +71,7 @@ BLS_LGCM_r <- getLGCM(
   records = 1:9, res_scale = 0.1, paramOut = TRUE, names = paraBLS_LGCM.r)
 ## Output point estimate and standard errors
 getEstimateStats(
-  est_in = BLS_LGCM_r[[2]], CI_type = "Wald"
+  est_in = BLS_LGCM_r@Estimates, CI_type = "Wald"
   )
 # Fit bilinear spline latent growth curve model (random knots) with time-invariant covariates for
 # mathematics development
@@ -89,7 +89,7 @@ BLS_LGCM.TIC_f <- getLGCM(
   )
 ## Output point estimate and standard errors
 getEstimateStats(
-  model = BLS_LGCM.TIC_f[[1]], est_in = BLS_LGCM.TIC_f[[2]], CI_type = "all", rep = 1000
+  model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 1000
   )
 }
 }

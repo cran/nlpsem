@@ -56,7 +56,7 @@ load(system.file("extdata", "getMediation_examples.RData", package = "nlpsem"))
 #    )
 
 ## -----------------------------------------------------------------------------
-Med2_LGCM_BLS[[2]]
+Med2_LGCM_BLS@Estimates
 
 ## ---- message = FALSE, eval = FALSE-------------------------------------------
 #  paraMed3_BLS <- c(
@@ -83,5 +83,5 @@ Med2_LGCM_BLS[[2]]
 #    )
 
 ## -----------------------------------------------------------------------------
-Med3_LGCM_BLS[[2]]
+Med3_LGCM_BLS@Estimates
 

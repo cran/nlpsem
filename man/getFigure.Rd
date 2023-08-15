@@ -111,12 +111,12 @@ set.seed(20191029)
 BLS_LGCM1 <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS",
                      intrinsic = FALSE, records = 1:9, res_scale = 0.1)
 Figure1 <- getFigure(
-  model = BLS_LGCM1, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
+  model = BLS_LGCM1@mxOutput, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
   m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
   outcome = "Mathematics"
 )
-print(Figure1)
+show(Figure1)
 # Plot mixture LGCM model
 BLS_LGCM2 <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM",
@@ -124,12 +124,12 @@ BLS_LGCM2 <-  getMIX(
   curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
 )
 Figure2 <- getFigure(
-  model = BLS_LGCM2, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
+  model = BLS_LGCM2@mxOutput, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
   m_var = NULL, x_var = NULL, x_type = NULL, xstarts = xstarts, xlab = "Month",
   outcome = "Mathematics"
 )
-print(Figure2)
+show(Figure2)
 }
 
 }

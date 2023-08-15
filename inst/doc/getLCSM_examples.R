@@ -65,21 +65,19 @@ load(system.file("extdata", "getLCSM_examples.RData", package = "nlpsem"))
 #    )
 
 ## -----------------------------------------------------------------------------
-getSummary(model_list = list(Read_LCSM_NonP[[1]], Read_LCSM_NonP_TIC[[1]]))
+getSummary(model_list = list(Read_LCSM_NonP@mxOutput, Read_LCSM_NonP_TIC@mxOutput))
 Figure1 <- getFigure(
-  model = Read_LCSM_NonP[[1]], sub_Model = "LCSM", y_var = "R", curveFun = "NonP", 
+  model = Read_LCSM_NonP@mxOutput, sub_Model = "LCSM", y_var = "R", curveFun = "NonP", 
   y_model = "LCSM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Reading"
 )
-print(Figure1[[1]])
-print(Figure1[[2]])
+show(Figure1)
 Figure2 <- getFigure(
-  model = Read_LCSM_NonP_TIC[[1]], sub_Model = "LCSM", y_var = "R", curveFun = "NonP", 
+  model = Read_LCSM_NonP_TIC@mxOutput, sub_Model = "LCSM", y_var = "R", curveFun = "NonP", 
   y_model = "LCSM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Reading"
 )
-print(Figure2[[1]])
-print(Figure2[[2]])
+show(Figure2)
 
 ## ---- message = FALSE, eval = FALSE-------------------------------------------
 #  Read_LCSM_QUAD <- getLCSM(
@@ -99,21 +97,21 @@ print(Figure2[[2]])
 
 ## -----------------------------------------------------------------------------
 Figure3 <- getFigure(
-  model = Read_LCSM_QUAD, sub_Model = "LCSM", y_var = "R", curveFun = "QUAD", 
+  model = Read_LCSM_QUAD@mxOutput, sub_Model = "LCSM", y_var = "R", curveFun = "QUAD", 
   y_model = "LCSM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Reading"
 )
-print(Figure3[[1]])
+show(Figure3)
 Figure4 <- getFigure(
-  model = Read_LCSM_EXP_r, sub_Model = "LCSM", y_var = "R", curveFun = "EXP", 
+  model = Read_LCSM_EXP_r@mxOutput, sub_Model = "LCSM", y_var = "R", curveFun = "EXP", 
   y_model = "LCSM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Reading"
 )
-print(Figure4[[1]])
+show(Figure4)
 Figure5 <- getFigure(
-  model = Read_LCSM_JB_r, sub_Model = "LCSM", y_var = "R", curveFun = "JB", 
+  model = Read_LCSM_JB_r@mxOutput, sub_Model = "LCSM", y_var = "R", curveFun = "JB", 
   y_model = "LCSM", t_var = "T", records = 1:9, xstarts = xstarts, xlab = "Year",
   outcome = "Reading"
 )
-print(Figure5[[1]])
+show(Figure5)
 
