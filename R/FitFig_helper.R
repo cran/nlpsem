@@ -80,7 +80,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
       dat_time_l$Wave <- substring(dat_time_l$Wave, 2)
       dat_raw <- merge(dat_traj_l, dat_time_l, by = c("ID", "Wave"))
       dat_raw <- dat_raw[order(dat_raw$ID, as.numeric(dat_raw$Wave)), ]
-      t_seq <- apply(dat[, paste0(t_var, records)], 2, mean)
+      t_seq0 <- apply(dat[, paste0(t_var, records)], 2, mean)
+      t_seq <- seq(t_seq0[1], t_seq0[length(t_seq0)], 0.1)
       Y_mean0 <- c(mxEvalByName(paste0(y_var, "_mean0"), model = model))
       Y_mean0_se <- c(mxSE(paste0(y_var, "_mean0"), model, forceName = T))
       Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
@@ -160,26 +161,25 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
       }
       dat_est <- data.frame(time = t_seq, Y_hat = Y_hat, Y_hat_u = Y_hat_u, Y_hat_l = Y_hat_l)
       dat_est$time <- dat_est$time + xstarts
-      lines <- c("Model Implied Growth Status" = "solid",
-                 "Smooth Line of Observed Growth Status" = "twodash",
-                 "95% Confidence Interval on Model Implied Growth Status" = "dotdash")
       fig.status <- ggplot(data = dat_est, aes(x = time, y = Y_hat, group = 1)) +
-        geom_line(aes(linetype = "Model Implied Growth Status"),  color = "black", size = 1) +
+        geom_line(aes(linetype = "Model Implied Growth Status"), color = "black", size = 1) +
         geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
         geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
         geom_smooth(data = dat_raw, aes(x = time, y = value, group = 1,
-                                                          linetype = "Smooth Line of Observed Growth Status"),
-                             color = "black", linewidth = 1, se = F) +
+                                        linetype = "Smooth Line of Observed Growth Status"),
+                    color = "black", linewidth = 1, se = F) +
         labs(x = xlab, y = paste0("Measurement of ", outcome)) +
-        scale_linetype_manual(values = c("dotdash", "solid", "twodash")) +
+        scale_linetype_manual(values = c("Model Implied Growth Status" = "solid",
+                                         "Smooth Line of Observed Growth Status" = "twodash",
+                                         "95% Confidence Interval on Model Implied Growth Status" = "dotdash")) +
         scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
         guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 3)) +
         theme_bw() +
         theme(strip.text.y = element_text(size = 4),
-                       strip.background = element_rect(color = "white", fill = "white"),
-                       strip.placement = "outside",
-                       legend.position = "bottom",
-                       legend.box = "vertical")
+              strip.background = element_rect(color = "white", fill = "white"),
+              strip.placement = "outside",
+              legend.position = "bottom",
+              legend.box = "vertical")
       figure <- list(fig.status)
     }
     else if (y_model == "LCSM"){
@@ -261,8 +261,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
         }
         dY_hat <- Y_mean0[2] + Y_mean0[3] * Y_mean0[4] * exp(Y_mean0[4] * t_seq)
-        dY_hat_u <- Y_mean0_u[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
-        dY_hat_l <- Y_mean0_l[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
+        dY_hat_u <- Y_mean0_u[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
+        dY_hat_l <- Y_mean0_l[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
         cY_hat <- Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
         cY_hat_u <- Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
         cY_hat_l <- Y_mean0_l[2] * t_seq + Y_mean0_l[3] * (exp(Y_mean0_l[4] * t_seq) - 1)
@@ -270,35 +270,33 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
       dat_est <- data.frame(time = t_seq, dY_hat = dY_hat, dY_hat_l = dY_hat_l, dY_hat_u = dY_hat_u,
                             cY_hat = cY_hat, cY_hat_l = cY_hat_l, cY_hat_u = cY_hat_u)
       dat_est$time <- dat_est$time + xstarts
-      lines <- c("Model Implied Change from Baseline" = "solid",
-                 "Smooth Line of Observed Change from Baseline" = "twodash",
-                 "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")
       fig.CHG_BL <- ggplot(data = dat_est, aes(x = time, y = cY_hat, group = 1)) +
-        geom_line(aes(linetype = "Model Implied Change from Baseline"),  color = "black", size = 1) +
-        geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), size = 1) +
-        geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), size = 1) +
+        geom_line(aes(linetype = "Model Implied Change from Baseline"), color = "black", linewidth = 1) +
+        geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
+        geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
         geom_smooth(data = dat_raw, aes(x = time, y = value, group = 1,
-                                                          linetype = "Smooth Line of Observed Change from Baseline"),
-                             color = "black", size = 1, se = F) +
+                                        linetype = "Smooth Line of Observed Change from Baseline"),
+                    color = "black", size = 1, se = F) +
         labs(x = xlab, y = paste0("Change from baseline of ", outcome)) +
-        scale_linetype_manual(values = c("dotdash", "solid", "twodash")) +
+        scale_linetype_manual(values = c("Model Implied Change from Baseline" = "solid",
+                                         "Smooth Line of Observed Change from Baseline" = "twodash",
+                                         "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")) +
         scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
         guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 3)) +
         theme_bw() +
         theme(strip.text.y = element_text(size = 4),
-                       strip.background = element_rect(color = "white", fill = "white"),
-                       strip.placement = "outside",
-                       legend.position = "bottom",
-                       legend.box = "vertical")
-      lines <- c("Model Implied Change from Baseline" = "solid",
-                 "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")
+              strip.background = element_rect(color = "white", fill = "white"),
+              strip.placement = "outside",
+              legend.position = "bottom",
+              legend.box = "vertical")
       if (curveFun %in% c("nonparametric", "NonP")){
         fig.SLP <- ggplot(data = dat_est, aes(x = time, y = dY_hat, group = 1)) +
-          geom_step(aes(linetype = "Model Implied Growth Rate"),  color = "black", size = 1) +
-          geom_step(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
-          geom_step(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
+          geom_step(aes(linetype = "Model Implied Growth Rate"), color = "black", linewidth = 1) +
+          geom_step(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
+          geom_step(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
           labs(x = xlab, y = paste0("Growth Rate of ", outcome)) +
-          scale_linetype_manual(values = c("dotdash", "solid")) +
+          scale_linetype_manual(values = c("Model Implied Growth Rate" = "solid",
+                                           "95% Confidence Interval on Model Implied Growth Rate" = "dotdash")) +
           scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
           guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 2)) +
           theme_bw() +
@@ -310,11 +308,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
       }
       else{
         fig.SLP <- ggplot(data = dat_est, aes(x = time, y = dY_hat, group = 1)) +
-          geom_line(aes(linetype = "Model Implied Growth Rate"),  color = "black", size = 1) +
-          geom_line(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
-          geom_line(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
+          geom_line(aes(linetype = "Model Implied Growth Rate"), color = "black", linewidth = 1) +
+          geom_line(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
+          geom_line(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
           labs(x = xlab, y = paste0("Growth Rate of ", outcome)) +
-          scale_linetype_manual(values = c("dotdash", "solid")) +
+          scale_linetype_manual(values = c("Model Implied Growth Rate" = "solid",
+                                           "95% Confidence Interval on Model Implied Growth Rate" = "dotdash")) +
           scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
           guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 2)) +
           theme_bw() +
@@ -343,7 +342,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           dat_time_l$Wave <- substring(dat_time_l$Wave, 2)
           dat_raw <- merge(dat_traj_l, dat_time_l, by = c("ID", "Wave"))
           dat_raw <- dat_raw[order(dat_raw$ID, as.numeric(dat_raw$Wave)), ]
-          t_seq <- apply(dat[, paste0(t_var, records)], 2, mean)
+          t_seq0 <- apply(dat[, paste0(t_var, records)], 2, mean)
+          t_seq <- seq(t_seq0[1], t_seq0[length(t_seq0)], 0.1)
           dat_est_L <- list()
           for (k in 1:nClass){
             Y_mean0 <- mxEvalByName(paste0("c", k, y_var, "_mean0"), model = model@submodels[[k]])
@@ -433,17 +433,16 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           }
           dat_est <- do.call(rbind, dat_est_L)
           dat_est$time <- dat_est$time + xstarts
-          lines <- c("Model Implied Growth Status" = "solid",
-                     "Smooth Line of Observed Growth Status" = "twodash",
-                     "95% Confidence Interval on Model Implied Growth Status" = "dotdash")
           fig.status <- ggplot(data = dat_est, aes(x = time, y = Y_hat, group = Class, color = as.factor(Class))) +
-            geom_line(aes(linetype = "Model Implied Growth Status"), size = 1) +
-            geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
-            geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
+            geom_line(aes(linetype = "Model Implied Growth Status"), linewidth = 1) +
+            geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
+            geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
             geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class, linetype = "Smooth Line of Observed Growth Status"),
                         linewidth = 1, se = F) +
             labs(x = xlab, y = paste0("Growth Status of ", outcome), color = "Class") +
-            scale_linetype_manual(values = c("dotdash", "solid", "twodash")) +
+            scale_linetype_manual(values = c("Model Implied Growth Status" = "solid",
+                                             "Smooth Line of Observed Growth Status" = "twodash",
+                                             "95% Confidence Interval on Model Implied Growth Status" = "dotdash")) +
             scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
             scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
             guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 3, order = 1),
@@ -544,8 +543,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                     1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
               }
               dY_hat <- Y_mean0[2] + Y_mean0[3] * Y_mean0[4] * exp(Y_mean0[4] * t_seq)
-              dY_hat_u <- Y_mean0_u[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
-              dY_hat_l <- Y_mean0_l[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
+              dY_hat_u <- Y_mean0_u[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
+              dY_hat_l <- Y_mean0_l[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
               cY_hat <- Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
               cY_hat_u <- Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
               cY_hat_l <- Y_mean0_l[2] * t_seq + Y_mean0_l[3] * (exp(Y_mean0_l[4] * t_seq) - 1)
@@ -555,18 +554,16 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           }
           dat_est <- do.call(rbind, dat_est_L)
           dat_est$time <- dat_est$time + xstarts
-          lines <- c("Model Implied Change from Baseline" = "solid",
-                     "Smooth Line of Observed Change from Baseline" = "twodash",
-                     "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")
           fig.CHG_BL <- ggplot(data = dat_est, aes(x = time, y = cY_hat, group = Class, color = as.factor(Class))) +
-            geom_line(aes(linetype = "Model Implied Change from Baseline"),  size = 1) +
-            geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), size = 1) +
-            geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), size = 1) +
-            geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class,
-                                            linetype = "Smooth Line of Observed Change from Baseline"),
-                        size = 1, se = F) +
+            geom_line(aes(linetype = "Model Implied Change from Baseline"), linewidth = 1) +
+            geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
+            geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
+            geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class, linetype = "Smooth Line of Observed Change from Baseline"),
+                        linewidth = 1, se = F) +
             labs(x = xlab, y = paste0("Change from baseline of ", outcome), color = "Class") +
-            scale_linetype_manual(values = c("dotdash", "solid", "twodash")) +
+            scale_linetype_manual(values = c("Model Implied Change from Baseline" = "solid",
+                                             "Smooth Line of Observed Change from Baseline" = "twodash",
+                                             "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")) +
             scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
             scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
             guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 3, order = 1),
@@ -578,15 +575,14 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                   legend.position = "bottom",
                   legend.box = "vertical",
                   legend.margin = margin(-3, 0, -3, 0))
-          lines <- c("Model Implied Change from Baseline" = "solid",
-                     "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")
           if (curveFun %in% c("nonparametric", "NonP")){
             fig.SLP <- ggplot(data = dat_est, aes(x = time, y = dY_hat, group = Class, color = as.factor(Class))) +
-              geom_step(aes(linetype = "Model Implied Growth Rate"),  size = 1) +
-              geom_step(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
-              geom_step(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
+              geom_step(aes(linetype = "Model Implied Growth Rate"), linewidth = 1) +
+              geom_step(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
+              geom_step(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
               labs(x = xlab, y = paste0("Growth Rate of ", outcome), color = "Class") +
-              scale_linetype_manual(values = c("dotdash", "solid")) +
+              scale_linetype_manual(values = c("Model Implied Growth Rate" = "solid",
+                                               "95% Confidence Interval on Model Implied Growth Rate" = "dotdash")) +
               scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
               scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
               guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 2, order = 1),
@@ -601,11 +597,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           }
           else{
             fig.SLP <- ggplot(data = dat_est, aes(x = time, y = dY_hat, group = Class, color = as.factor(Class))) +
-              geom_line(aes(linetype = "Model Implied Growth Rate"),  size = 1) +
-              geom_line(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
-              geom_line(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
+              geom_line(aes(linetype = "Model Implied Growth Rate"), linewidth = 1) +
+              geom_line(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
+              geom_line(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
               labs(x = xlab, y = paste0("Growth Rate of ", outcome), color = "Class") +
-              scale_linetype_manual(values = c("dotdash", "solid")) +
+              scale_linetype_manual(values = c("Model Implied Growth Rate" = "solid",
+                                               "95% Confidence Interval on Model Implied Growth Rate" = "dotdash")) +
               scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
               scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
               guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 2, order = 1),
@@ -637,7 +634,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         dat_time_l$Wave <- substring(dat_time_l$Wave, 2)
         dat_raw <- merge(dat_traj_l, dat_time_l, by = c("ID", "Wave"))
         dat_raw <- dat_raw[order(dat_raw$ID, as.numeric(dat_raw$Wave)), ]
-        t_seq <- apply(dat[, paste0(t_var, records)], 2, mean)
+        t_seq0 <- apply(dat[, paste0(t_var, records)], 2, mean)
+        t_seq <- seq(t_seq0[1], t_seq0[length(t_seq0)], 0.1)
         dat_est_L <- list()
         for (k in 1:nClass){
           Y_mean0 <- mxEvalByName(paste0("c", k, y_var, "_mean0"), model = model@submodels[[k]])
@@ -727,17 +725,16 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         }
         dat_est <- do.call(rbind, dat_est_L)
         dat_est$time <- dat_est$time + xstarts
-        lines <- c("Model Implied Growth Status" = "solid",
-                   "Smooth Line of Observed Growth Status" = "twodash",
-                   "95% Confidence Interval on Model Implied Growth Status" = "dotdash")
         fig.status <- ggplot(data = dat_est, aes(x = time, y = Y_hat, group = Class, color = as.factor(Class))) +
-          geom_line(aes(linetype = "Model Implied Growth Status"), size = 1) +
-          geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
-          geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
+          geom_line(aes(linetype = "Model Implied Growth Status"), linewidth = 1) +
+          geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
+          geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
           geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class, linetype = "Smooth Line of Observed Growth Status"),
                       linewidth = 1, se = F) +
           labs(x = xlab, y = paste0("Growth Status of ", outcome), color = "Class") +
-          scale_linetype_manual(values = c("dotdash", "solid", "twodash")) +
+          scale_linetype_manual(values = c("Model Implied Growth Status" = "solid",
+                                           "Smooth Line of Observed Growth Status" = "twodash",
+                                           "95% Confidence Interval on Model Implied Growth Status" = "dotdash")) +
           scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
           scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
           guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 3, order = 1),
@@ -838,8 +835,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                   1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
             }
             dY_hat <- Y_mean0[2] + Y_mean0[3] * Y_mean0[4] * exp(Y_mean0[4] * t_seq)
-            dY_hat_u <- Y_mean0_u[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
-            dY_hat_l <- Y_mean0_l[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
+            dY_hat_u <- Y_mean0_u[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
+            dY_hat_l <- Y_mean0_l[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
             cY_hat <- Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
             cY_hat_u <- Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
             cY_hat_l <- Y_mean0_l[2] * t_seq + Y_mean0_l[3] * (exp(Y_mean0_l[4] * t_seq) - 1)
@@ -849,18 +846,17 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         }
         dat_est <- do.call(rbind, dat_est_L)
         dat_est$time <- dat_est$time + xstarts
-        lines <- c("Model Implied Change from Baseline" = "solid",
-                   "Smooth Line of Observed Change from Baseline" = "twodash",
-                   "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")
         fig.CHG_BL <- ggplot(data = dat_est, aes(x = time, y = cY_hat, group = Class, color = as.factor(Class))) +
-          geom_line(aes(linetype = "Model Implied Change from Baseline"),  size = 1) +
-          geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), size = 1) +
-          geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), size = 1) +
+          geom_line(aes(linetype = "Model Implied Change from Baseline"),  linewidth = 1) +
+          geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
+          geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
           geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class,
                                           linetype = "Smooth Line of Observed Change from Baseline"),
-                      size = 1, se = F) +
+                      linewidth = 1, se = F) +
           labs(x = xlab, y = paste0("Change from baseline of ", outcome), color = "Class") +
-          scale_linetype_manual(values = c("dotdash", "solid", "twodash")) +
+          scale_linetype_manual(values = c("Model Implied Change from Baseline" = "solid",
+                                           "Smooth Line of Observed Change from Baseline" = "twodash",
+                                           "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")) +
           scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
           scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
           guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 3, order = 1),
@@ -872,15 +868,14 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                 legend.position = "bottom",
                 legend.box = "vertical",
                 legend.margin = margin(-3, 0, -3, 0))
-        lines <- c("Model Implied Change from Baseline" = "solid",
-                   "95% Confidence Interval on Model Implied Change from Baseline" = "dotdash")
         if (curveFun %in% c("nonparametric", "NonP")){
           fig.SLP <- ggplot(data = dat_est, aes(x = time, y = dY_hat, group = Class, color = as.factor(Class))) +
-            geom_step(aes(linetype = "Model Implied Growth Rate"),  size = 1) +
-            geom_step(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
-            geom_step(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
+            geom_step(aes(linetype = "Model Implied Growth Rate"),  linewidth = 1) +
+            geom_step(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
+            geom_step(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
             labs(x = xlab, y = paste0("Growth Rate of ", outcome), color = "Class") +
-            scale_linetype_manual(values = c("dotdash", "solid")) +
+            scale_linetype_manual(values = c("Model Implied Growth Rate" = "solid",
+                                             "95% Confidence Interval on Model Implied Growth Rate" = "dotdash")) +
             scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
             scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
             guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 2, order = 1),
@@ -895,11 +890,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         }
         else{
           fig.SLP <- ggplot(data = dat_est, aes(x = time, y = dY_hat, group = Class, color = as.factor(Class))) +
-            geom_line(aes(linetype = "Model Implied Growth Rate"),  size = 1) +
-            geom_line(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
-            geom_line(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), size = 1) +
+            geom_line(aes(linetype = "Model Implied Growth Rate"),  linewidth = 1) +
+            geom_line(aes(x = time, y = dY_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
+            geom_line(aes(x = time, y = dY_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Rate"), linewidth = 1) +
             labs(x = xlab, y = paste0("Growth Rate of ", outcome), color = "Class") +
-            scale_linetype_manual(values = c("dotdash", "solid")) +
+            scale_linetype_manual(values = c("Model Implied Growth Rate" = "solid",
+                                             "95% Confidence Interval on Model Implied Growth Rate" = "dotdash")) +
             scale_x_continuous(breaks = ceiling(seq(from = min(dat_est$time), to = max(dat_est$time), length.out = length(records)))) +
             scale_color_manual(values = colorRampPalette(c("grey20", "grey80"))(nClass), labels = class_labels) +
             guides(linetype = guide_legend(title = "Trajectory Type: ", nrow = 2, order = 1),
@@ -914,7 +910,6 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         }
         figure <- list(fig.CHG_BL, fig.SLP)
       }
-
     }
   }
   return(figure)

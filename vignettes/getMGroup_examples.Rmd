@@ -18,11 +18,6 @@ knitr::opts_chunk$set(
 
 ## Load nlpsem package, dependent packages and set CSOLNP as the optimizer
 ```{r, message = FALSE}
-library(OpenMx)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(ggplot2)
 library(nlpsem)
 mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 ```

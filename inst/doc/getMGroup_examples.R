@@ -5,11 +5,6 @@ knitr::opts_chunk$set(
 )
 
 ## ---- message = FALSE---------------------------------------------------------
-library(OpenMx)
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(ggplot2)
 library(nlpsem)
 mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 

@@ -344,13 +344,8 @@ Models</h1>
 <div id="load-nlpsem-package-dependent-packages-and-set-csolnp-as-the-optimizer" class="section level2">
 <h2>Load nlpsem package, dependent packages and set CSOLNP as the
 optimizer</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(OpenMx)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="fu">library</span>(nlpsem)</span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="fu">mxOption</span>(<span class="at">model =</span> <span class="cn">NULL</span>, <span class="at">key =</span> <span class="st">&quot;Default optimizer&quot;</span>, <span class="st">&quot;CSOLNP&quot;</span>, <span class="at">reset =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(nlpsem)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">mxOption</span>(<span class="at">model =</span> <span class="cn">NULL</span>, <span class="at">key =</span> <span class="st">&quot;Default optimizer&quot;</span>, <span class="st">&quot;CSOLNP&quot;</span>, <span class="at">reset =</span> <span class="cn">FALSE</span>)</span></code></pre></div>
 </div>
 <div id="load-pre-computed-models" class="section level2">
 <h2>Load pre-computed models</h2>
