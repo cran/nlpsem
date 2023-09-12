@@ -1,11 +1,13 @@
 #' @title Calculate p-Values and Confidence Intervals of Parameters for a Fitted Model
 #'
-#' @description This function calculates p-values and confidence intervals (CIs) of parameters for a given model.
-#' It supports different types of CIs, including Wald CIs, likelihood-based CIs, bootstrap CIs, or all three.
+#' @description This function calculates p-values and confidence intervals (CIs) of parameters for a given model.It supports
+#' different types of CIs, including Wald CIs, likelihood-based CIs, bootstrap CIs, or all three.
 #'
-#' @param model A fitted mxModel object. This is the output from one of the estimation functions in this package.
-#' Default is \code{NULL}. This is only required when generating likelihood-based and bootstrap CIs.
-#' @param est_in A data frame containing input estimates.
+#' @param model A fitted mxModel object. Specifically, this should be the \code{mxOutput} slot from the result returned by
+#' one of the estimation functions provided by this package. The default value is \code{NULL}. Providing this parameter is
+#' essential when generating likelihood-based and bootstrap confidence intervals (CIs).
+#' @param est_in The \code{Estimates} slot from the result returned by one of the estimation functions provided by this
+#' package, which contains a dataframe with point estimates and standard errors.
 #' @param p_values A logical flag indicating whether to calculate p-values. Default is \code{TRUE}.
 #' @param CI A logical flag indicating whether to compute confidence intervals. Default is \code{TRUE}.
 #' @param CI_type A string specifying the type of confidence interval to compute. Supported options include
@@ -15,7 +17,14 @@
 #' @param conf.level A numeric value representing the confidence level for confidence interval calculation. Default is
 #' \code{0.95}.
 #'
-#' @return A data frame with calculated statistics (p-value, confidence intervals) added to the input estimates.
+#' @return An object of class \code{StatsOutput} with potential slots:
+#' \itemize{
+#'   \item \code{wald}: Contains a data frame with, point estimates, standard errors p-values, and Wald confidence intervals
+#'   (when specified).
+#'   \item \code{likelihood}: Contains a data frame with likelihood-based confidence intervals (when specified).
+#'   \item \code{bootstrap}: Contains a data frame with bootstrap confidence intervals (when specified).
+#' }
+#' The content of these slots can be printed using the \code{printTable()} method for S4 objects.
 #'
 #' @references
 #' \itemize{
@@ -30,7 +39,7 @@
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' # Load ECLS-K (2011) data
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
@@ -48,8 +57,8 @@
 #' # Standardized time-invariant covariates
 #' RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
 #' RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
-#' # Fit bilinear spline latent growth curve model (fixed knots)
 #' \donttest{
+#' # Fit bilinear spline latent growth curve model (fixed knots)
 #' paraBLS_LGCM.r <- c(
 #'   "mueta0", "mueta1", "mueta2", "knot",
 #'   paste0("psi", c("00", "01", "02", "11", "12", "22")),
@@ -58,7 +67,7 @@
 #' BLS_LGCM_r <- getLGCM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
 #'   records = 1:9, res_scale = 0.1, paramOut = TRUE, names = paraBLS_LGCM.r)
-#' ## Output point estimate and standard errors
+#' ## Generate P value and Wald confidence intervals
 #' getEstimateStats(
 #'   est_in = BLS_LGCM_r@Estimates, CI_type = "Wald"
 #'   )
@@ -76,11 +85,14 @@
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE, records = 1:9,
 #'   growth_TIC = c("ex1", "ex2"), res_scale = 0.1, paramOut = TRUE, names = paraBLS.TIC_LGCM.f
 #'   )
-#' ## Output point estimate and standard errors
+#' ## Change optimizer to "SLSQP" for getting likelihood-based confidence interval
+#' mxOption(model = NULL, key = "Default optimizer", "SLSQP", reset = FALSE)
+#' ## Generate P value and all three types of confidence intervals
 #' getEstimateStats(
 #'   model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 1000
 #'   )
 #' }
+#'
 #' @importFrom OpenMx omxGetParameters mxTryHard mxModel mxCI mxBootstrap
 #' @importFrom dplyr %>% select summarize_all
 #' @importFrom stats quantile

@@ -8,8 +8,12 @@
 #' @param conf.level A numeric value representing the confidence level for the confidence interval of the kappa statistic.
 #' The default value is \code{0.95}.
 #'
-#' @return A list with two elements: The first is a string that provides the kappa statistic along with its confidence
-#' interval. The second is a string describing the level of agreement (such as "Perfect Agreement", "Slight Agreement", etc.).
+#' @return An object of class \code{KappaOutput} with the following slots:
+#' \itemize{
+#'   \item \code{kappa_value}: A string representing the kappa statistic along with its confidence interval.
+#'   \item \code{judgment}: A string describing the level of agreement, such as "Perfect Agreement", "Slight Agreement", etc.
+#' }
+#' The content of these slots can be printed using the \code{printTable()} method for S4 objects.
 #'
 #' @references
 #' \itemize{
@@ -24,9 +28,10 @@
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
+#' # Re-baseline the data so that the estimated initial status is for the starting point of the study
 #' baseT <- RMS_dat0$T1
 #' RMS_dat0$T1 <- RMS_dat0$T1 - baseT
 #' RMS_dat0$T2 <- RMS_dat0$T2 - baseT
@@ -67,7 +72,7 @@
 #'   model = MIX_BLS_LGCM.TIC_r@mxOutput, nClass = 3, label = FALSE,
 #'   cluster_TIC = c("gx1", "gx2")
 #' )
-#' ## Calcualte membership between two sets of labels
+#' ## Calcualte the agreement between two sets of membership labels
 #' getLatentKappa(label1 = label1@membership, label2 = label2@membership)
 #' }
 #'

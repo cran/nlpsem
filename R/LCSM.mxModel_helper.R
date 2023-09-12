@@ -71,7 +71,7 @@ getLCSM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, gro
         BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[3]][p, ],
                             labels = paste0("beta", p - 1, 1:nTICs))
       }
-      model_mx <- mxModel(name = "LCSM_TICs, Linear Functional Form", type = "RAM",
+      model_mx <- mxModel(name = "LCSM_TICs, Nonparametric Functional Form", type = "RAM",
                           mxData(observed = dat, type = "raw"),
                           manifestVars = manifests, latentVars = latents,
                           mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[1]][[1]],
@@ -98,7 +98,7 @@ getLCSM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, gro
                           GF_loadings, AddPara)
     }
     else if (is.null(growth_TIC)){
-      model_mx <- mxModel(name = "LCSM, Linear Functional Form", type = "RAM",
+      model_mx <- mxModel(name = "LCSM, Nonparametric Functional Form", type = "RAM",
                           mxData(observed = dat, type = "raw"),
                           manifestVars = manifests, latentVars = latents,
                           mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[1]][[1]],

@@ -45,7 +45,7 @@ load(system.file("extdata", "getLGCM_examples.RData", package = "nlpsem"))
 
 ## -----------------------------------------------------------------------------
 getLRT(
-  full = Math_LGCM_BLS_f@mxOutput, reduced = Math_LGCM_BLS_r@mxOutput, boot = FALSE, replications = NA
+  full = Math_LGCM_BLS_f@mxOutput, reduced = Math_LGCM_BLS_r@mxOutput, boot = FALSE, rep = NA
   )
 
 ## ---- message = FALSE, eval = FALSE-------------------------------------------

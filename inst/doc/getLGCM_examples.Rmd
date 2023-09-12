@@ -65,7 +65,7 @@ Math_LGCM_BLS_r <- getLGCM(
 
 ```{r}
 getLRT(
-  full = Math_LGCM_BLS_f@mxOutput, reduced = Math_LGCM_BLS_r@mxOutput, boot = FALSE, replications = NA
+  full = Math_LGCM_BLS_f@mxOutput, reduced = Math_LGCM_BLS_r@mxOutput, boot = FALSE, rep = NA
   )
 ```
 

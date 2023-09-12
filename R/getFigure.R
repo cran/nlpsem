@@ -1,31 +1,31 @@
 #' @title Generate Visualization for Fitted Model
 #'
 #' @description This function generates visualizations for the output of a fitted model. When a Latent Growth Curve Model
-#' (LGCM) is fitted for the longitudinal process, it provides (class-specific) estimated growth status with
-#' 95% confidence intervals. When a Latent Change Score Model (LCSM) is fitted for the longitudinal process,
-#' it provides (class-specific) estimated growth rate with 95% confidence intervals and change from baseline
-#' with 95% confidence intervals. These visualizations are particularly useful for understanding the results
-#' and trajectories of different classes or groups within the model.
+#' (LGCM) is fitted for the longitudinal process, it provides (class-specific) estimated growth status with 95% confidence
+#' intervals. When a Latent Change Score Model (LCSM) is fitted for the longitudinal process, it provides (class-specific)
+#' estimated growth rate with 95% confidence intervals and change from baseline with 95% confidence intervals. These
+#' visualizations are particularly useful for understanding the results and trajectories of different classes or groups
+#' within the model.
 #'
-#' @param model A fitted mxModel object. This is the output from one of the estimation functions in this
-#' package.
-#' @param nClass An integer specifying the number of classes for the mixture model or multiple group model. Default
-#' is \code{NULL}, indicating a single-group model.
+#' @param model A fitted mxModel object. Specifically, this should be the \code{mxOutput} slot from the result returned by
+#' one of the estimation functions provided by this package.
+#' @param nClass An integer specifying the number of latent classes for the mixture model or manifested classes for multiple
+#' group model. Default is \code{NULL}, indicating a single-group model.
 #' @param cluster_TIC A string or character vector representing the column name(s) for time-invariant covariate(s)
 #' indicating cluster formations. Default is \code{NULL}, indicating no such time-invariant covariates are present
 #' in the model.
 #' @param grp_var A string specifying the column that indicates manifested classes when applicable.
-#' @param sub_Model A string that specifies the sub-model for latent classes. Supported sub-models include \code{"LGCM"} (for latent
-#' growth curve models), \code{"LCSM"} (for latent change score models), \code{"TVC"} (for latent growth curve models or latent change
-#' score models with a time-varying covariate), \code{"MGM"} (for multivariate latent growth curve models or latent change score models),
-#' and \code{"MED"} (for longitudinal mediation models).
+#' @param sub_Model A string that specifies the (class-specific) model. Supported sub-models include \code{"LGCM"} (for latent
+#' growth curve models), \code{"LCSM"} (for latent change score models), \code{"TVC"} (for latent growth curve models or latent
+#' change score models with a time-varying covariate), \code{"MGM"} (for multivariate latent growth curve models or latent change
+#' score models), and \code{"MED"} (for longitudinal mediation models).
 #' @param y_var A string or character vector representing the prefix of the column names for the outcome variable(s)
 #' at each study wave.
-#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"} include:
-#' \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
-#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for
-#' \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
-#' and \code{"Jenss-Bayley"} (or \code{"JB"}).
+#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"}
+#' include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
+#' \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for \code{y_model =
+#' "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
+#' (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param y_model A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
 #' By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.
 #' @param t_var A string representing the prefix of the column names corresponding to the time variable at each study
@@ -33,23 +33,24 @@
 #' @param records A numeric vector representing the indices of the study waves.
 #' @param m_var A string that specifies the prefix of the column names corresponding to the mediator variable at each time point.
 #' Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.
+#' @param x_type A string indicating the type of predictor variable used in the model. Supported values are \code{"baseline"}
+#' and \code{"longitudinal"}. Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.
 #' @param x_var A string specifying the baseline predictor if \code{x_type = "baseline"}, or the prefix of the column names
 #' corresponding to the predictor variable at each study wave if \code{x_type = "longitudinal"}. Default is \code{NULL} as this
 #' argument only requires when \code{sub_Model} is \code{"MED"}.
-#' @param x_type A string indicating the type of predictor variable used in the model. Supported values are \code{"baseline"}
-#' and \code{"longitudinal"}. Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.
 #' @param xstarts A numeric value to indicate the starting time of the longitudinal process.
 #' @param xlab A string representing the time unit (e.g., "Week", "Month", or "Year") for the x-axis. Default is
 #' "Time".
 #' @param outcome A string or character vector representing the name(s) of the longitudinal process(es) under examination.
 #'
-#' @return A ggplot object or a list of ggplot objects, each representing a figure for the fitted model. If a list of
-#' ggplot objects is returned, it can be visualized using the \code{print} function.
+#' @return An object of class \code{figOutput} containing a slot named \code{figures}. This slot holds a ggplot object or a list
+#' of ggplot objects, each representing a figure for the fitted model. If the \code{figures} slot contains a list of ggplot objects,
+#' individual figures can be visualized using the \code{show()} function.
 #'
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' # Load ECLS-K (2011) data
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
@@ -94,7 +95,7 @@
 #' }
 #'
 getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, sub_Model, y_var,
-                      curveFun, y_model = NULL, t_var, records, m_var = NULL, x_var = NULL, x_type = NULL,
+                      curveFun, y_model = NULL, t_var, records, m_var = NULL, x_type = NULL, x_var = NULL,
                       xstarts, xlab = "Time", outcome = "Process"){
   if (I(sub_Model == "MGM" & length(y_var) != length(outcome))){
     stop("Please ensure provide a name for each longitudinal process!")

@@ -1,6 +1,6 @@
-#' @title Fit a Latent Change Score Model with a Time-invariant Covariate If Any
+#' @title Fit a Latent Change Score Model with a Time-invariant Covariate (If Any)
 #'
-#' @description This function fits a latent change score model with or without time-invariant covariates using the given data.
+#' @description This function fits a latent change score model with or without time-invariant covariates to the provided data.
 #' It manages model setup, optimization, and if requested, outputs parameter estimates and standard errors.
 #'
 #' @param dat A wide-format data frame, with each row corresponding to a unique ID. It contains the observed variables with
@@ -29,13 +29,18 @@
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
 #' @param names A character vector specifying parameter names. Default is \code{NULL}.
 #'
-#' @return A list containing the fitted latent change score model and, if \code{paramOut = TRUE}, a data frame with parameter
-#' estimates and standard errors.
+#' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+#' \itemize{
+#'   \item \code{mxOutput}: This slot contains the fitted latent change score model. A summary of this model can be obtained using the
+#'   \code{ModelSummary()} function.
+#'   \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+#'   of this slot can be printed using the \code{printTable()} method for S4 objects.
+#' }
 #'
 #' @references
 #' \itemize{
-#'   \item {Liu, J., & Perera, R. A. (2023). "Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual
-#'   Measurement Occasions: A New Perspective on Growth Curves." Behavior Research Methods. In press.}
+#'   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
+#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
 #'   \item {Liu, J. (2022). "Jenss–Bayley Latent Change Score Model With Individual Ratio of the Growth Acceleration in the Framework
 #'   of Individual Measurement Occasions." Journal of Educational and Behavioral Statistics, 47(5), 507–543.
 #'   \doi{10.3102/10769986221099919}}
@@ -47,12 +52,11 @@
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' # Load ECLS-K (2011) data
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
-#' # Re-baseline the data so that the estimated initial status is for the
-#' # starting point of the study
+#' # Re-baseline the data so that the estimated initial status is for the starting point of the study
 #' baseT <- RMS_dat0$T1
 #' RMS_dat0$T1 <- (RMS_dat0$T1 - baseT)/12
 #' RMS_dat0$T2 <- (RMS_dat0$T2 - baseT)/12
@@ -66,6 +70,7 @@
 #' # Standardized time-invariant covariates
 #' RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
 #' RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
+#'
 #' \donttest{
 #' # Fit nonparametric change score model for reading development
 #' ## Fit model
@@ -74,6 +79,7 @@
 #'   intrinsic = FALSE, records = 1:9, res_scale = 0.1
 #'   )
 #' }
+#'
 #' @importFrom OpenMx mxTryHard mxRun
 #' @importFrom methods new
 #'

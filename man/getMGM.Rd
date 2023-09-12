@@ -75,7 +75,13 @@ distribution), \code{"rnorm"} (normal distribution), and \code{"rcauchy"} (Cauch
 \item{names}{A character vector specifying parameter names. Default is \code{NULL}.}
 }
 \value{
-A list containing the fitted model and, if \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors.
+An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+\itemize{
+  \item \code{mxOutput}: This slot contains the fitted multivariate latent growth curve model or a multivariate latent change score
+  model. A summary of this model can be obtained using the \code{ModelSummary()} function.
+  \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+  of this slot can be printed using the \code{printTable()} method for S4 objects.
+}
 }
 \description{
 This function fits a multivariate latent growth curve model or a multivariate latent change score model
@@ -83,7 +89,7 @@ with the provided data. It manages model setup, optimization, and if requested, 
 standard errors.
 }
 \examples{
-OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 # Load ECLS-K (2011) data
 data("RMS_dat")
 RMS_dat0 <- RMS_dat
@@ -98,6 +104,7 @@ RMS_dat0$T6 <- RMS_dat0$T6 - baseT
 RMS_dat0$T7 <- RMS_dat0$T7 - baseT
 RMS_dat0$T8 <- RMS_dat0$T8 - baseT
 RMS_dat0$T9 <- RMS_dat0$T9 - baseT
+
 \donttest{
 # Fit linear multivariate latent growth curve model
 LIN_PLGCM_f <- getMGM(

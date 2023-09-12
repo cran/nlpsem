@@ -829,7 +829,7 @@ getTVC.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
               BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[4]][p, ],
                                   labels = paste0("beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
             }
-            model_mx <- mxModel(name = "LGCM with decomposed TVC and TICs, Jenss Bayley Functional Form (fixed ratio)",
+            model_mx <- mxModel(name = "LGCM with TVC and TICs, Jenss Bayley Functional Form (fixed ratio)",
                                 type = "RAM", mxData(observed = dat, type = "raw"),
                                 manifestVars = manifests, latentVars = latents,
                                 mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[1]][[1]][1:3],
@@ -988,7 +988,7 @@ getTVC.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
             }
             BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[4]][Y_nGF, ],
                                     labels = paste0("beta", "g", c(paste0("TIC", 1:length(growth_TIC)))))
-            model_mx <- mxModel(name = "LGCM with decomposed TVC and TICs, Bilinear Spline Functional Form (random knot)",
+            model_mx <- mxModel(name = "LGCM with TVC and TICs, Bilinear Spline Functional Form (random knot)",
                                 type = "RAM", mxData(observed = dat, type = "raw"),
                                 manifestVars = manifests, latentVars = latents,
                                 mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[1]][[1]][1:3],
@@ -2161,7 +2161,7 @@ getTVC.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
               BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[4]][p, ],
                                   labels = paste0("beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
             }
-            model_mx <- mxModel(name = "LCSM with decomposed TVC and TICs, Jenss Bayley Functional Form (fixed ratio)",
+            model_mx <- mxModel(name = "LCSM with TVC and TICs, Jenss Bayley Functional Form (fixed ratio)",
                                 type = "RAM", mxData(observed = dat, type = "raw"),
                                 manifestVars = manifests, latentVars = latents,
                                 mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[1]][[1]][1:3],

@@ -3,13 +3,17 @@
 #' @description This function computes individual factor scores for each latent variable in a given model. It supports three
 #' types of factor scores: maximum likelihood, weighted maximum likelihood, and regression.
 #'
-#' @param model A fitted mxModel object. This is the output from one of the estimation functions in this
-#' package.
+#' @param model A fitted mxModel object. Specifically, this should be the \code{mxOutput} slot from the result returned by
+#' one of the estimation functions provided by this package.
 #' @param FS_type A string specifying the type of factor scores to compute. Supported options include \code{"ML"} (for
 #' Maximum Likelihood), \code{"WeightedML"} (for Weighted Maximum Likelihood), and \code{"Regression"}. Default is \code{"Regression"}.
 #'
-#' @return A list containing two elements: scores_est, the factor score estimates, and scores_se, the standard errors of the
-#' factor score estimates.
+#' @return An object of class \code{FSOutput} with two slots:
+#' \itemize{
+#'   \item \code{scores_est}: Contains the factor score estimates.
+#'   \item \code{scores_se}: Contains the standard errors of the factor score estimates.
+#' }
+#' The content of these slots can be printed using the \code{printTable()} method for S4 objects.
 #'
 #' @references
 #' \itemize{
@@ -22,7 +26,7 @@
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' # Load ECLS-K (2011) data
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat

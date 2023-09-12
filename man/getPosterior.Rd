@@ -7,32 +7,35 @@
 getPosterior(model, nClass, label = FALSE, cluster_TIC = NULL)
 }
 \arguments{
-\item{model}{A fitted mxModel object. This is the output from \code{getMIX()}.}
+\item{model}{A fitted mxModel object. Specifically, this should be the \code{mxOutput} slot from the output of \code{getMIX()}.}
 
 \item{nClass}{An integer representing the predefined number of latent classes in the model.}
 
-\item{label}{A logical value indicating whether the data contains true labels. Default is FALSE.}
+\item{label}{A logical value indicating whether the data contains true labels, which are often available in a simulated data set.
+Default is FALSE.}
 
 \item{cluster_TIC}{A string or character vector representing the column name(s) for time-invariant covariate(s)
 indicating cluster formations. Default is \code{NULL}, indicating that no such time-invariant covariates are present
 in the model.}
 }
 \value{
-A list containing:
+An object of class \code{postOutput}. Depending on the \code{label} argument, the object may contain the following slots:
 \itemize{
-  \item {\code{prob}: A matrix of posterior probabilities.}
-  \item {\code{membership}: A vector indicating class membership based on maximum posterior probability.}
-  \item {\code{entropy}: The entropy of the model, a measure of uncertainty in class assignment.}
-  \item {\code{accuracy}: The model's accuracy, if true labels are provided (\code{label = TRUE}).}
+  \item \code{prob}: A matrix of posterior probabilities.
+  \item \code{membership}: A vector indicating class membership based on maximum posterior probability.
+  \item \code{entropy}: The entropy of the model, a measure of uncertainty in class assignment.
+  \item \code{accuracy} (optional): If \code{label = TRUE}, the model's accuracy based on true labels.
 }
+The content of these slots can be printed using the \code{printTable()} method for S4 objects.
 }
 \description{
 This function computes posterior probabilities, cluster assignments, and model entropy for a given mixture model
 with a predefined number of classes. If the true labels are available, it can also compute the model accuracy.
 }
 \examples{
-OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 data("RMS_dat")
+# Re-baseline the data so that the estimated initial status is for the starting point of the study
 RMS_dat0 <- RMS_dat
 baseT <- RMS_dat0$T1
 RMS_dat0$T1 <- RMS_dat0$T1 - baseT
@@ -49,6 +52,8 @@ RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
 RMS_dat0$gx1 <- scale(RMS_dat0$INCOME)
 RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
 \donttest{
+# Fit longitudinal mixture group model of bilinear spline functional form with fixed knot but no
+# cluster TICs or growth TICs
 set.seed(20191029)
 MIX_BLS_LGCM_r <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
@@ -58,6 +63,8 @@ MIX_BLS_LGCM_r <-  getMIX(
 label1 <- getPosterior(
   model = MIX_BLS_LGCM_r@mxOutput, nClass = 3, label = FALSE, cluster_TIC = NULL
 )
+# Fit longitudinal mixture group model of bilinear spline functional form with fixed knot, cluster
+# TICs, and growth TICs
 set.seed(20191029)
 MIX_BLS_LGCM.TIC_r <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",

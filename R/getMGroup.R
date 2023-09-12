@@ -11,26 +11,28 @@
 #' } For the first three submodels, time-invariant covariates are allowed.
 #'
 #' @param dat A wide-format data frame, with each row corresponding to a unique ID. It contains the observed variables with
-#' repeated measurements and occasions for each longitudinal process, and time-invariant covariates (TICs) if any.
+#' repeated measurements and occasions for each longitudinal process, time-invariant covariates (TICs) if any, and a variable
+#' that indicates manifested group.
 #' @param grp_var A string specifying the column that indicates manifested classes.
-#' @param sub_Model A string that specifies the sub-model for manifested classes. Supported sub-models include \code{"LGCM"} (for latent
-#' growth curve models), \code{"LCSM"} (for latent change score models), \code{"TVC"} (for latent growth curve models or latent change
-#' score models with a time-varying covariate), \code{"MGM"} (for multivariate latent growth curve models or latent change score models),
-#' and \code{"MED"} (for longitudinal mediation models).
-#' @param t_var A string specifying the prefix of the column names corresponding to the time variable for each study wave. This applies when
-#' \code{sub_Model} is \code{"LGCM"}, \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{t_var} should
-#' be a string vector where each element corresponds to the time variable prefix for each respective longitudinal process.
-#' @param records A numeric vector denoting the indices of the observed study waves. This applies when \code{sub_Model} is \code{"LGCM"},
-#' \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{records} should be a list of numeric vectors,
-#' where each vector provides the indices of the observed study waves for each longitudinal process.
-#' @param y_var A string defining the prefix of the column names corresponding to the outcome variable for each study wave. This is applicable
-#' when \code{sub_Model} is not \code{"MGM"}. For \code{sub_Model} being \code{"MGM"}, \code{y_var} should be a string vector where each element
-#' corresponds to the prefix of the column names for each outcome variable across the study waves.
-#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"} include:
-#' \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
-#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for
-#' \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
-#' and \code{"Jenss-Bayley"} (or \code{"JB"}).
+#' @param sub_Model A string that specifies the sub-model for manifested classes. Supported sub-models include \code{"LGCM"}
+#' (for latent growth curve models), \code{"LCSM"} (for latent change score models), \code{"TVC"} (for latent growth curve
+#' models or latent change score models with a time-varying covariate), \code{"MGM"} (for multivariate latent growth curve
+#' models or latent change score models), and \code{"MED"} (for longitudinal mediation models).
+#' @param t_var A string specifying the prefix of the column names corresponding to the time variable for each study wave.
+#' This applies when \code{sub_Model} is \code{"LGCM"}, \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"}
+#' or \code{"MED"}, \code{t_var} should be a string vector where each element corresponds to the time variable prefix for each
+#' respective longitudinal process.
+#' @param records A numeric vector denoting the indices of the observed study waves. This applies when \code{sub_Model} is
+#' \code{"LGCM"}, \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{records} should
+#' be a list of numeric vectors, where each vector provides the indices of the observed study waves for each longitudinal process.
+#' @param y_var A string defining the prefix of the column names corresponding to the outcome variable for each study wave. This
+#' is applicable when \code{sub_Model} is not \code{"MGM"}. For \code{sub_Model} being \code{"MGM"}, \code{y_var} should be a
+#' string vector where each element corresponds to the prefix of the column names for each outcome variable across the study waves.
+#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"}
+#' include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
+#' \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for \code{y_model =
+#' "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
+#' (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param intrinsic A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. By default, this is
 #' \code{NULL}, as it is unnecessary when \code{sub_Model} is \code{"MED"}.
 #' @param y_model A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
@@ -67,14 +69,20 @@
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
 #' @param names A character vector specifying parameter names. Default is \code{NULL}.
 #'
-#' @return A list containing the fitted latent change score model and, if \code{paramOut = TRUE}, a data frame with parameter
-#' estimates and standard errors.
+#' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+#' \itemize{
+#'   \item \code{mxOutput}: This slot contains the fitted longitudinal multiple group model. A summary of this model can be obtained using
+#'   the \code{ModelSummary()} function.
+#'   \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+#'   of this slot can be printed using the \code{printTable()} method for S4 objects.
+#' }
 #'
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' data("RMS_dat")
+#' # Re-baseline the data so that the estimated initial status is for the starting point of the study
 #' RMS_dat0 <- RMS_dat
 #' baseT <- RMS_dat0$T1
 #' RMS_dat0$T1 <- RMS_dat0$T1 - baseT
@@ -88,11 +96,15 @@
 #' RMS_dat0$T9 <- RMS_dat0$T9 - baseT
 #' RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
 #' RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
+
 #' \donttest{
+#' # Fit longitudinal multiple group model of bilinear spline functional form with fixed knot
 #' MGroup_BLS_LGCM.TIC_f <-  getMGroup(
 #'   dat = RMS_dat0, grp_var = "SEX", sub_Model = "LGCM", y_var = "M", t_var = "T",
 #'   records = 1:9, curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
 #' )
+#'
+#' # Fit longitudinal multiple group model of bilinear spline functional form with random knot
 #' paraBLS.TIC_LGCM.f <- c(
 #'   "alpha0", "alpha1", "alpha2", "alphag",
 #'   paste0("psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")),
@@ -113,7 +125,7 @@
 #' @importFrom methods new
 #'
 getMGroup <- function(dat, grp_var, sub_Model, t_var, records, y_var, curveFun, intrinsic = NULL, y_model = NULL,
-                      m_var = NULL, x_var = NULL, x_type = NULL, TVC = NULL, decompose = NULL, growth_TIC = NULL,
+                      m_var = NULL, x_type = NULL, x_var = NULL, TVC = NULL, decompose = NULL, growth_TIC = NULL,
                       starts = NULL, res_scale = NULL, res_cor = NULL, tries = NULL, OKStatus = 0, jitterD = "runif",
                       loc = 1, scale = 0.25, paramOut = FALSE, names = NULL){
   if (I(paramOut & is.null(names))){

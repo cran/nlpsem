@@ -2,19 +2,20 @@
 % Please edit documentation in R/getLRT.R
 \name{getLRT}
 \alias{getLRT}
-\title{Perform Likelihood Ratio Test (LRT) for Comparing Full and Reduced Models}
+\title{Perform Bootstrap Likelihood Ratio Test for Comparing Full and Reduced Models}
 \usage{
-getLRT(full, reduced, boot = FALSE, replications = NA)
+getLRT(full, reduced, boot = FALSE, rep = NA)
 }
 \arguments{
-\item{full}{A fitted mxModel object for the full model.}
+\item{full}{A fitted mxModel object for the full model. Specifically, this should be the \code{mxOutput} slot from the result
+returned by one of the estimation functions provided by this package.}
 
-\item{reduced}{A fitted mxModel object for the reduced model.}
+\item{reduced}{A fitted mxModel object for the reduced model. Specifically, this should be the \code{mxOutput} slot from the
+result returned by one of the estimation functions provided by this package.}
 
 \item{boot}{A logical flag indicating whether to perform bootstrapping for the comparison. Default is \code{FALSE}.}
 
-\item{replications}{An integer specifying the number of bootstrap replications if \code{boot} is \code{TRUE}.
-Default is \code{NA}.}
+\item{rep}{An integer specifying the number of bootstrap replications if \code{boot} is \code{TRUE}. Default is \code{NA}.}
 }
 \value{
 A data frame containing the number of free parameters, estimated likelihood (-2ll), degrees of freedom, differences
@@ -27,7 +28,7 @@ It also provides an option to perform bootstrapping for the comparison.
 }
 \examples{
 
-OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 # Load ECLS-K (2011) data
 data("RMS_dat")
 RMS_dat0 <- RMS_dat
@@ -42,15 +43,16 @@ RMS_dat0$T6 <- RMS_dat0$T6 - baseT
 RMS_dat0$T7 <- RMS_dat0$T7 - baseT
 RMS_dat0$T8 <- RMS_dat0$T8 - baseT
 RMS_dat0$T9 <- RMS_dat0$T9 - baseT
-# Fit bilinear spline growth model with random knot (intrinsically nonlinear model)
+
 \donttest{
+# Fit bilinear spline growth model with random knot (intrinsically nonlinear model)
 BLS_LGCM_f <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
                       intrinsic = TRUE, records = 1:9, res_scale = 0.1)
 # Fit bilinear spline growth model with fix knot (non-intrinsically nonlinear model)
 BLS_LGCM_r <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
                       intrinsic = FALSE, records = 1:9, res_scale = 0.1)
 # Likelihood ratio test
-getLRT(full = BLS_LGCM_f@mxOutput, reduced = BLS_LGCM_r@mxOutput, boot = FALSE, replications = NA)
+getLRT(full = BLS_LGCM_f@mxOutput, reduced = BLS_LGCM_r@mxOutput, boot = FALSE, rep = NA)
 }
 
 }

@@ -18,20 +18,21 @@
 #' and \code{"MED"} (for longitudinal mediation models).
 #' @param cluster_TIC A string or character vector representing the column name(s) for time-invariant covariate(s) indicating cluster
 #' formations. Default is \code{NULL}, indicating no such time-invariant covariates are present in the model.
-#' @param t_var A string specifying the prefix of the column names corresponding to the time variable for each study wave. This applies when
-#' \code{sub_Model} is \code{"LGCM"}, \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{t_var} should
-#' be a string vector where each element corresponds to the time variable prefix for each respective longitudinal process.
-#' @param records A numeric vector denoting the indices of the observed study waves. This applies when \code{sub_Model} is \code{"LGCM"},
-#' \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{records} should be a list of numeric vectors,
-#' where each vector provides the indices of the observed study waves for each longitudinal process.
-#' @param y_var A string defining the prefix of the column names corresponding to the outcome variable for each study wave. This is applicable
-#' when \code{sub_Model} is not \code{"MGM"}. For \code{sub_Model} being \code{"MGM"}, \code{y_var} should be a string vector where each element
-#' corresponds to the prefix of the column names for each outcome variable across the study waves.
-#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"} include:
-#' \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
-#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for
-#' \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
-#' and \code{"Jenss-Bayley"} (or \code{"JB"}).
+#' @param t_var A string specifying the prefix of the column names corresponding to the time variable for each study wave.
+#' This applies when \code{sub_Model} is \code{"LGCM"}, \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"}
+#' or \code{"MED"}, \code{t_var} should be a string vector where each element corresponds to the time variable prefix for each
+#' respective longitudinal process.
+#' @param records A numeric vector denoting the indices of the observed study waves. This applies when \code{sub_Model} is
+#' \code{"LGCM"}, \code{"LCSM"} or \code{"TVC"}. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{records} should
+#' be a list of numeric vectors, where each vector provides the indices of the observed study waves for each longitudinal process.
+#' @param y_var A string defining the prefix of the column names corresponding to the outcome variable for each study wave. This
+#' is applicable when \code{sub_Model} is not \code{"MGM"}. For \code{sub_Model} being \code{"MGM"}, \code{y_var} should be a
+#' string vector where each element corresponds to the prefix of the column names for each outcome variable across the study waves.
+#' @param curveFun A string specifying the functional forms of the growth curve(s). Supported options for \code{y_model = "LGCM"}
+#' include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"} (or \code{"EXP"}),
+#' \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported options for \code{y_model =
+#' "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
+#' (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param intrinsic A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. By default, this is
 #' \code{NULL} as it is unnecessary when \code{sub_Model} is \code{"MED"}.
 #' @param y_model A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
@@ -68,8 +69,13 @@
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
 #' @param names A character vector specifying parameter names. Default is \code{NULL}.
 #'
-#' @return A list containing the fitted latent change score model and, if \code{paramOut = TRUE}, a data frame with parameter
-#' estimates and standard errors.
+#' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+#' \itemize{
+#'   \item \code{mxOutput}: This slot contains the fitted longitudinal mixture model. A summary of this model can be obtained using
+#'   the \code{ModelSummary()} function.
+#'   \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+#'   of this slot can be printed using the \code{printTable()} method for S4 objects.
+#' }
 #'
 #' @references
 #' \itemize{
@@ -79,18 +85,19 @@
 #'   \item {Liu, J., & Perera, R. A. (2022). Extending Growth Mixture Model to Assess Heterogeneity in Joint Development with
 #'   Piecewise Linear Trajectories in the Framework of Individual Measurement Occasions. Psychological Methods (Advance online
 #'   publication). \doi{10.1037/met0000500}}
-#'   \item {Liu, J., & Perera, R. A. (2023). "Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
-#'   Occasions: A New Perspective on Growth Curves." Behavior Research Methods. In press.}
+#'   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
+#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
 #'   \item {Liu, J. (2023). Further Exploration of the Effects of Time-varying Covariate in Growth Mixture Models with Nonlinear
-#'   Trajectories. arXiv. \url{https://arxiv.org/abs/2301.06014}}
+#'   Trajectories. Behavior Research Methods. \doi{10.3758/s13428-023-02183-5}}
 #' }
 #'
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
+#' # Re-baseline the data so that the estimated initial status is for the starting point of the study
 #' baseT <- RMS_dat0$T1
 #' RMS_dat0$T1 <- RMS_dat0$T1 - baseT
 #' RMS_dat0$T2 <- RMS_dat0$T2 - baseT
@@ -106,11 +113,15 @@
 #' RMS_dat0$gx1 <- scale(RMS_dat0$INCOME)
 #' RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
 #' \donttest{
+#' # Fit longitudinal mixture group model of bilinear spline functional form with fixed knot
+#' # (2 classes)
 #' MIX_BLS_LGCM.TIC_r <-  getMIX(
 #'   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM",
 #'   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9,
 #'   curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
 #'   )
+#' # Fit longitudinal mixture group model of bilinear spline functional form with fixed knot
+#' # (3 classes)
 #' paraBLS.TIC_LGCM.r <- c(
 #'   "alpha0", "alpha1", "alpha2", "knot",
 #'   paste0("psi", c("00", "01", "02", "11", "12", "22")), "residuals",

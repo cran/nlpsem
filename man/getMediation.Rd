@@ -75,14 +75,20 @@ distribution), \code{"rnorm"} (normal distribution), and \code{"rcauchy"} (Cauch
 \item{names}{A character vector specifying parameter names. Default is \code{NULL}.}
 }
 \value{
-A list containing the fitted model and, if \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors.
+An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+\itemize{
+  \item \code{mxOutput}: This slot contains the fitted longitudinal mediation model. A summary of this model can be obtained using
+  the \code{ModelSummary()} function.
+  \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+  of this slot can be printed using the \code{printTable()} method for S4 objects.
+}
 }
 \description{
 This function fits a longitudinal mediation model to the provided data. It manages model setup, optimization,
 and if requested, outputs parameter estimates and standard errors.
 }
 \examples{
-OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 # Load ECLS-K (2011) data
 data("RMS_dat")
 RMS_dat0 <- RMS_dat

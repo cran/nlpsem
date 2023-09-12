@@ -12,8 +12,8 @@
 #' @param curveFun A string specifying the functional form of the growth curve. Supported options for \code{y_model =
 #' "LGCM"} include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
 #' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported
-#' options for \code{y_model = "LCSM"} include: \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
-#' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"nonparametric"} (or \code{"NonP"}).
+#' options for \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}),
+#' \code{"negative exponential"} (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}.
 #' @param intrinsic A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. Default is
 #' \code{TRUE}.
 #' @param records A numeric vector specifying the indices of the observed study waves.
@@ -44,12 +44,18 @@
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
 #' @param names A character vector specifying parameter names. Default is \code{NULL}.
 #'
-#' @return A list containing the fitted model and, if \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors.
+#' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+#' \itemize{
+#'   \item \code{mxOutput}: This slot contains the fitted latent growth curve model or latent change score model with a time-varying
+#'   covariate. A summary of this model can be obtained using the \code{ModelSummary()} function.
+#'   \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+#'   of this slot can be printed using the \code{printTable()} method for S4 objects.
+#' }
 #'
 #' @references
 #' \itemize{
-#'   \item {Liu, J., & Perera, R. A. (2023). "Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
-#'   Occasions: A New Perspective on Growth Curves." Behavior Research Methods. In press.}
+#'   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
+#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
 #'   \item {Liu, J. (2022). "Decomposing Impact on Longitudinal Outcome of Time-varying Covariate into Baseline Effect and Temporal Effect."
 #'   arXiv. https://arxiv.org/abs/2210.16916}
 #' }
@@ -57,9 +63,10 @@
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
+#' # Re-baseline the data so that the estimated initial status is for the starting point of the study
 #' baseT <- RMS_dat0$T1
 #' RMS_dat0$T1 <- (RMS_dat0$T1 - baseT)/12
 #' RMS_dat0$T2 <- (RMS_dat0$T2 - baseT)/12
@@ -72,6 +79,8 @@
 #' RMS_dat0$T9 <- (RMS_dat0$T9 - baseT)/12
 #' RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
 #' RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
+#'
+#' # Standardize reading ability over time with its baseline value
 #' BL_mean <- mean(RMS_dat0[, "R1"])
 #' BL_var <- var(RMS_dat0[, "R1"])
 #' RMS_dat0$Rs1 <- (RMS_dat0$R1 - BL_mean)/sqrt(BL_var)
@@ -83,6 +92,7 @@
 #' RMS_dat0$Rs7 <- (RMS_dat0$R7 - BL_mean)/sqrt(BL_var)
 #' RMS_dat0$Rs8 <- (RMS_dat0$R8 - BL_mean)/sqrt(BL_var)
 #' RMS_dat0$Rs9 <- (RMS_dat0$R9 - BL_mean)/sqrt(BL_var)
+#'
 #' \donttest{
 #' # Fit bilinear spline latent growth curve model (fixed knot) with a time-varying
 #' # reading ability for mathematics development
@@ -91,6 +101,7 @@
 #'  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 0,  growth_TIC = NULL,
 #'  res_scale = 0.1
 #'  )
+#'
 #' # Fit negative exponential latent growth curve model (random ratio) with a
 #' # decomposed time-varying reading ability and time-invariant covariates for
 #' # mathematics development

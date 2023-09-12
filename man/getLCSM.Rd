@@ -2,7 +2,7 @@
 % Please edit documentation in R/getLCSM.R
 \name{getLCSM}
 \alias{getLCSM}
-\title{Fit a Latent Change Score Model with a Time-invariant Covariate If Any}
+\title{Fit a Latent Change Score Model with a Time-invariant Covariate (If Any)}
 \usage{
 getLCSM(
   dat,
@@ -66,20 +66,24 @@ distribution), \code{"rnorm"} (normal distribution), and \code{"rcauchy"} (Cauch
 \item{names}{A character vector specifying parameter names. Default is \code{NULL}.}
 }
 \value{
-A list containing the fitted latent change score model and, if \code{paramOut = TRUE}, a data frame with parameter
-estimates and standard errors.
+An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+\itemize{
+  \item \code{mxOutput}: This slot contains the fitted latent change score model. A summary of this model can be obtained using the
+  \code{ModelSummary()} function.
+  \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+  of this slot can be printed using the \code{printTable()} method for S4 objects.
+}
 }
 \description{
-This function fits a latent change score model with or without time-invariant covariates using the given data.
+This function fits a latent change score model with or without time-invariant covariates to the provided data.
 It manages model setup, optimization, and if requested, outputs parameter estimates and standard errors.
 }
 \examples{
-OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 # Load ECLS-K (2011) data
 data("RMS_dat")
 RMS_dat0 <- RMS_dat
-# Re-baseline the data so that the estimated initial status is for the
-# starting point of the study
+# Re-baseline the data so that the estimated initial status is for the starting point of the study
 baseT <- RMS_dat0$T1
 RMS_dat0$T1 <- (RMS_dat0$T1 - baseT)/12
 RMS_dat0$T2 <- (RMS_dat0$T2 - baseT)/12
@@ -93,6 +97,7 @@ RMS_dat0$T9 <- (RMS_dat0$T9 - baseT)/12
 # Standardized time-invariant covariates
 RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
 RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
+
 \donttest{
 # Fit nonparametric change score model for reading development
 ## Fit model
@@ -101,11 +106,12 @@ NonP_LCSM <- getLCSM(
   intrinsic = FALSE, records = 1:9, res_scale = 0.1
   )
 }
+
 }
 \references{
 \itemize{
-  \item {Liu, J., & Perera, R. A. (2023). "Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual
-  Measurement Occasions: A New Perspective on Growth Curves." Behavior Research Methods. In press.}
+  \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
+  Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
   \item {Liu, J. (2022). "Jenss–Bayley Latent Change Score Model With Individual Ratio of the Growth Acceleration in the Framework
   of Individual Measurement Occasions." Journal of Educational and Behavioral Statistics, 47(5), 507–543.
   \doi{10.3102/10769986221099919}}

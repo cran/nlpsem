@@ -29,8 +29,13 @@
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
 #' @param names A character vector specifying parameter names. Default is \code{NULL}.
 #'
-#' @return A list containing the fitted latent growth curve model and, if \code{paramOut = TRUE}, a data frame with parameter
-#' estimates and standard errors.
+#' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
+#' \itemize{
+#'   \item \code{mxOutput}: This slot contains the fitted latent growth curve model. A summary of this model can be obtained using the
+#'   \code{ModelSummary()} function.
+#'   \item \code{Estimates} (optional): If \code{paramOut = TRUE}, a data frame with parameter estimates and standard errors. The content
+#'   of this slot can be printed using the \code{printTable()} method for S4 objects.
+#' }
 #'
 #' @references
 #' \itemize{
@@ -44,12 +49,11 @@
 #' @export
 #'
 #' @examples
-#' OpenMx::mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 #' # Load ECLS-K (2011) data
 #' data("RMS_dat")
 #' RMS_dat0 <- RMS_dat
-#' # Re-baseline the data so that the estimated initial status is for the
-#' # starting point of the study
+#' # Re-baseline the data so that the estimated initial status is for the starting point of the study
 #' baseT <- RMS_dat0$T1
 #' RMS_dat0$T1 <- RMS_dat0$T1 - baseT
 #' RMS_dat0$T2 <- RMS_dat0$T2 - baseT

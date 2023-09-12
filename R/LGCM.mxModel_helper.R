@@ -481,7 +481,7 @@ getLGCM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, gro
                             GF_loadings, TIC_MEAN, TIC_VAR, BETA)
       }
       else if (is.null(growth_TIC)){
-        model_mx <- mxModel(name = "LGCM_TICs, Bilinear Spline Functional Form, Random knot", type = "RAM",
+        model_mx <- mxModel(name = "LGCM, Bilinear Spline Functional Form, Random knot", type = "RAM",
                             mxData(observed = dat, type = "raw"),
                             manifestVars = manifests, latentVars = latents,
                             mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[1]][[1]][1:3],
