@@ -25,15 +25,16 @@
 #' for latent change score models) and factor loadings of a multivariate longitudinal outcomes.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxMatrix mxAlgebraFromString mxAlgebra
 #'
 getMULTI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, records){
   outPoint_L <- outLag_L <- midTime_L <- outLoads_L <- list()
-  for (traj in 1:length(y_var)){
+  for (traj in seq_along(y_var)){
     outPoint <- list()
     for (j in records[[traj]]){
-      outPoint[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var[traj], j),
+      outPoint[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var[traj], j),
                               name = paste0(y_var[traj], "t", j))
     }
     outPoint_L[[traj]] <- outPoint
@@ -60,7 +61,7 @@ getMULTI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, record
         if (intrinsic){
           outLoads1 <- outLoads2 <- list()
           for (j in records[[traj]]){
-            outPoint[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var[traj], j),
+            outPoint[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var[traj], j),
                                     name = paste0(y_var[traj], "t", j))
             outLoads1[[j]] <- mxAlgebraFromString(paste0("1 - exp(-", y_var[traj], "_mug",
                                                          " * ", y_var[traj], "t", j, ")"),
@@ -112,11 +113,11 @@ getMULTI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, record
           for(j in records[[traj]]){
             outLoads1[[j]] <- mxAlgebraFromString(paste0(y_var[traj], "t", j, " - ", y_var[traj], "_mug"),
                                                   name = paste0("L1", j, y_var[traj]))
-            outLoads2[[j]] <- mxAlgebraFromString(paste0("abs(", y_var[traj], "t", j, " - ", y_var[traj], "_mug)"),
+            outLoads2[[j]] <- mxAlgebraFromString(paste0("sqrt((", y_var[traj], "t", j, " - ", y_var[traj], "_mug)^2 + 1e-6)"),
                                                   name = paste0("L2", j, y_var[traj]))
             outLoads3[[j]] <- mxAlgebraFromString(paste0("-", y_var[traj], "_mueta2s * (", y_var[traj], "t", j, " - ", y_var[traj],
-                                                         "_mug)/abs(", y_var[traj], "t", j,
-                                                         " - ", y_var[traj], "_mug) - ", y_var[traj], "_mueta2s"),
+                                                         "_mug)/sqrt((", y_var[traj], "t", j, " - ", y_var[traj], "_mug)^2 + 1e-6) - ",
+                                                         y_var[traj], "_mueta1s"),
                                                   name = paste0("L3", j, y_var[traj]))
           }
           outLoads_L[[traj]] <- list(outLoads1, outLoads2, outLoads3)

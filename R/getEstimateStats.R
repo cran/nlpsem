@@ -1,6 +1,6 @@
 #' @title Calculate p-Values and Confidence Intervals of Parameters for a Fitted Model
 #'
-#' @description This function calculates p-values and confidence intervals (CIs) of parameters for a given model.It supports
+#' @description This function calculates p-values and confidence intervals (CIs) of parameters for a given model. It supports
 #' different types of CIs, including Wald CIs, likelihood-based CIs, bootstrap CIs, or all three.
 #'
 #' @param model A fitted mxModel object. Specifically, this should be the \code{mxOutput} slot from the result returned by
@@ -19,7 +19,7 @@
 #'
 #' @return An object of class \code{StatsOutput} with potential slots:
 #' \itemize{
-#'   \item \code{wald}: Contains a data frame with, point estimates, standard errors p-values, and Wald confidence intervals
+#'   \item \code{wald}: Contains a data frame with, point estimates, standard errors, p-values, and Wald confidence intervals
 #'   (when specified).
 #'   \item \code{likelihood}: Contains a data frame with likelihood-based confidence intervals (when specified).
 #'   \item \code{bootstrap}: Contains a data frame with bootstrap confidence intervals (when specified).
@@ -35,6 +35,8 @@
 #'   Biometrika, 75(1), 139-144. Oxford University Press. \url{https://www.jstor.org/stable/2336444}}
 #'   \item {Efron, B. & Tibshirani, R. J. (1994). An Introduction to the Bootstrap. CRC press.}
 #' }
+#'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getIndFS}}, \code{\link{getPosterior}}
 #'
 #' @export
 #'
@@ -59,42 +61,33 @@
 #' RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
 #' \donttest{
 #' # Fit bilinear spline latent growth curve model (fixed knots)
-#' paraBLS_LGCM.r <- c(
-#'   "mueta0", "mueta1", "mueta2", "knot",
-#'   paste0("psi", c("00", "01", "02", "11", "12", "22")),
-#'   "residuals"
-#'   )
 #' BLS_LGCM_r <- getLGCM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-#'   records = 1:9, res_scale = 0.1, paramOut = TRUE, names = paraBLS_LGCM.r)
+#'   records = 1:9, paramOut = TRUE)
 #' ## Generate P value and Wald confidence intervals
 #' getEstimateStats(
 #'   est_in = BLS_LGCM_r@Estimates, CI_type = "Wald"
 #'   )
+#' }
+#' \dontrun{
 #' # Fit bilinear spline latent growth curve model (random knots) with time-invariant covariates for
 #' # mathematics development
-#' ## Define parameter names
-#' paraBLS.TIC_LGCM.f <- c(
-#'   "alpha0", "alpha1", "alpha2", "alphag",
-#'   paste0("psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")), "residuals",
-#'   paste0("beta1", c(0:2, "g")), paste0("beta2", c(0:2, "g")), paste0("mux", 1:2),
-#'   paste0("phi", c("11", "12", "22")), "mueta0", "mueta1", "mueta2", "mu_knot"
-#'   )
 #' ## Fit the model
+#' set.seed(20191029)
 #' BLS_LGCM.TIC_f <- getLGCM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE, records = 1:9,
-#'   growth_TIC = c("ex1", "ex2"), res_scale = 0.1, paramOut = TRUE, names = paraBLS.TIC_LGCM.f
+#'   growth_TIC = c("ex1", "ex2"), tries = 20, paramOut = TRUE
 #'   )
 #' ## Change optimizer to "SLSQP" for getting likelihood-based confidence interval
 #' mxOption(model = NULL, key = "Default optimizer", "SLSQP", reset = FALSE)
 #' ## Generate P value and all three types of confidence intervals
 #' getEstimateStats(
-#'   model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 1000
+#'   model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 20
 #'   )
 #' }
 #'
 #' @importFrom OpenMx omxGetParameters mxTryHard mxModel mxCI mxBootstrap
-#' @importFrom dplyr %>% select summarize_all
+#' @importFrom dplyr %>% select left_join
 #' @importFrom stats quantile
 #' @importFrom methods new
 #'
@@ -103,58 +96,67 @@ getEstimateStats <- function(model = NULL, est_in, p_values = TRUE, CI = TRUE, C
   est_out_wald <- est_in[, -1]
   rownames(est_out_wald) <- est_in$Name
   if (p_values){
-    p_value <- round((1 - pnorm(abs(est_in[, 2]/est_in[, 3]), lower.tail = T)) * 2, 4)
-    est_out_wald$p.value <- ifelse(p_value < 0.0001, "<0.0001", ifelse(p_value > 0.9999, ">0.9999", p_value))
+    se <- est_in[, 3]
+    z_ratio <- ifelse(se == 0, NA_real_, est_in[, 2] / se)
+    p_value <- round((1 - pnorm(abs(z_ratio), lower.tail = TRUE)) * 2, 4)
+    est_out_wald$p.value <- ifelse(is.na(p_value), NA_character_,
+                                   ifelse(p_value < 0.0001, "<0.0001",
+                                          ifelse(p_value > 0.9999, ">0.9999", p_value)))
+  }
+  # Helper: compute Wald CIs
+  .add_wald_CI <- function(est_out, est_in, conf.level) {
+    z <- qnorm(1 - (1 - conf.level)/2)
+    est_out$wald_lbound <- round(est_in[, 2] - z * est_in[, 3], 4)
+    est_out$wald_ubound <- round(est_in[, 2] + z * est_in[, 3], 4)
+    est_out
+  }
+  # Helper: compute likelihood-based CIs
+  .get_likelihood_CI <- function(model) {
+    free_para <- omxGetParameters(model = model)
+    model_CI <- mxTryHard(mxModel(model = model, mxCI(names(free_para))), intervals = TRUE)
+    est_out_lik <- as.data.frame(round(model_CI$output$confidenceIntervals, 4))[, c(2, 1, 3)]
+    names(est_out_lik) <- c("Estimate", "lik_lbound", "lik_ubound")
+    est_out_lik
+  }
+  # Helper: compute bootstrap CIs
+  .get_bootstrap_CI <- function(model, rep) {
+    boot <- mxBootstrap(model, replications = rep)
+    boot_raw <- boot$compute$output$raw %>%
+      select(-seed, -fit, -statusCode)
+    boot_CI <- as.data.frame(t(sapply(boot_raw, function(x) quantile(x, c(0.025, 0.975)))))
+    boot_CI$name <- row.names(boot_CI)
+    boot_est <- summary(boot)$parameters
+    est_out_boot <- data.frame(round(boot_est %>% select(name, Estimate) %>% left_join(boot_CI, by = c("name" = "name")) %>%
+                                       select(-name), 4))
+    names(est_out_boot) <- c("Estimate", "boot_lbound", "boot_ubound")
+    rownames(est_out_boot) <- row.names(boot_CI)
+    est_out_boot
   }
   if (CI){
     if (CI_type == "Wald"){
-      est_out_wald$wald_lbound <- round(est_in[, 2] - qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
-      est_out_wald$wald_ubound <- round(est_in[, 2] + qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
+      est_out_wald <- .add_wald_CI(est_out_wald, est_in, conf.level)
       statOut <- new("StatsOutput", wald = est_out_wald)
     }
     else if (CI_type == "likelihood"){
-      free_para <- omxGetParameters(model = model)
-      model_CI <- mxTryHard(mxModel(model = model, mxCI(names(free_para))), intervals = TRUE)
-      est_out_lik <- as.data.frame(round(model_CI$output$confidenceIntervals, 4))[, c(2, 1, 3)]
-      names(est_out_lik) <- c("Estimate", "lik_lbound", "lik_ubound")
+      if (is.null(model)) stop("A fitted mxModel object must be provided via 'model' for likelihood-based CIs.")
+      est_out_lik <- .get_likelihood_CI(model)
       statOut <- new("StatsOutput", likelihood = est_out_lik)
     }
     else if (CI_type == "bootstrap"){
-      boot <- mxBootstrap(model, replications = rep)
-      boot_CI  <- as.data.frame(t(boot$compute$output$raw %>%
-                                    select(-seed, -fit, -statusCode) %>%
-                                    summarize_all(function(x) quantile(x, c(0.025, 0.975)))))
-      boot_CI$name <- row.names(boot_CI)
-      boot_est <- summary(boot)$parameters
-      est_out_boot <- data.frame(round(boot_est %>% select(name, Estimate) %>% left_join(boot_CI, by = c("name" = "name")) %>%
-                                         select(-name), 4))
-      names(est_out_boot) <- c("Estimate", "boot_lbound", "boot_ubound")
-      rownames(est_out_boot) <- row.names(boot_CI)
+      if (is.null(model)) stop("A fitted mxModel object must be provided via 'model' for bootstrap CIs.")
+      est_out_boot <- .get_bootstrap_CI(model, rep)
       statOut <- new("StatsOutput", bootstrap = est_out_boot)
     }
     else if (CI_type == "all"){
-      est_out_wald$wald_lbound <- round(est_in[, 2] - qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
-      est_out_wald$wald_ubound <- round(est_in[, 2] + qnorm(1 - (1 - conf.level)/2) * est_in[, 3], 4)
-      free_para <- omxGetParameters(model = model)
-      model_CI <- mxTryHard(mxModel(model = model, mxCI(names(free_para))), intervals = TRUE)
-      est_out_lik <- as.data.frame(round(model_CI$output$confidenceIntervals, 4))[, c(2, 1, 3)]
-      names(est_out_lik) <- c("Estimate", "lik_lbound", "lik_ubound")
-      boot <- mxBootstrap(model, replications = rep)
-      boot_CI  <- as.data.frame(t(boot$compute$output$raw %>%
-                                    select(-seed, -fit, -statusCode) %>%
-                                    summarize_all(function(x) quantile(x, c(0.025, 0.975)))))
-      boot_CI$name <- row.names(boot_CI)
-      boot_est <- summary(boot)$parameters
-      est_out_boot <- data.frame(round(boot_est %>% select(name, Estimate) %>% left_join(boot_CI, by = c("name" = "name")) %>%
-                                         select(-name), 4))
-      rownames(est_out_boot) <- row.names(boot_CI)
-      names(est_out_boot) <- c("Estimate", "boot_lbound", "boot_ubound")
+      if (is.null(model)) stop("A fitted mxModel object must be provided via 'model' for likelihood-based and bootstrap CIs.")
+      est_out_wald <- .add_wald_CI(est_out_wald, est_in, conf.level)
+      est_out_lik <- .get_likelihood_CI(model)
+      est_out_boot <- .get_bootstrap_CI(model, rep)
       statOut <- new("StatsOutput", wald = est_out_wald, likelihood = est_out_lik, bootstrap = est_out_boot)
     }
   }
-  else if (!CI){
+  else {
     statOut <- new("StatsOutput", wald = est_out_wald)
   }
   return(statOut)
 }
-

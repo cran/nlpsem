@@ -37,6 +37,7 @@
 #' @return A ggplot object or a list of ggplot objects.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom tidyr pivot_longer
 #' @importFrom ggplot2 ggplot aes geom_line geom_smooth labs scale_linetype_manual scale_x_continuous guides guide_legend theme_bw theme element_text element_rect geom_step scale_color_manual margin
@@ -53,6 +54,26 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
   }
   else if (is.null(grp_var)){
     dat <- as.data.frame(model@data$observed)
+  }
+  # Helper to clamp extreme CI values that distort plot axes (common with nonlinear models)
+  .clamp_ci <- function(dat_est, main_col, ci_cols, dat_raw_vals = NULL) {
+    # Determine data range from main trajectory and observed data
+    ref_vals <- dat_est[[main_col]]
+    if (!is.null(dat_raw_vals)) ref_vals <- c(ref_vals, dat_raw_vals)
+    ref_range <- range(ref_vals, na.rm = TRUE)
+    padding <- 3 * diff(ref_range)  # Allow CIs up to 3x the data range
+    lo <- ref_range[1] - padding
+    hi <- ref_range[2] + padding
+    for (col in ci_cols) {
+      if (col %in% names(dat_est)) {
+        vals <- dat_est[[col]]
+        vals[is.infinite(vals) | is.nan(vals)] <- NA
+        vals[!is.na(vals) & vals < lo] <- lo
+        vals[!is.na(vals) & vals > hi] <- hi
+        dat_est[[col]] <- vals
+      }
+    }
+    dat_est
   }
   dat$ID <- 1:nrow(dat)
   if (!is.null(nClass)){
@@ -83,7 +104,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
       t_seq0 <- apply(dat[, paste0(t_var, records)], 2, mean)
       t_seq <- seq(t_seq0[1], t_seq0[length(t_seq0)], 0.1)
       Y_mean0 <- c(mxEvalByName(paste0(y_var, "_mean0"), model = model))
-      Y_mean0_se <- c(mxSE(paste0(y_var, "_mean0"), model, forceName = T))
+      Y_mean0_se <- c(mxSE(paste0(y_var, "_mean0"), model, forceName = TRUE))
       Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
       Y_mean0_l <- Y_mean0 - 1.96 * Y_mean0_se
       if (curveFun %in% c("linear", "LIN")){
@@ -105,12 +126,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         Y_mean0_u <- if (length(Y_mean0_u) == 3){
           Y_mean0_u
         } else {
-          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[3])
+          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[3])
         }
         Y_mean0_l <- if (length(Y_mean0_l) == 3){
           Y_mean0_l
         } else {
-          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[3])
+          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[3])
         }
         Y_hat <- Y_mean0[1] + Y_mean0[2] * (1 - exp(-Y_mean0[3] * t_seq))
         Y_hat_u <- Y_mean0_u[1] + Y_mean0_u[2] * (1 - exp(-Y_mean0_u[3] * t_seq))
@@ -125,12 +146,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         Y_mean0_u <- if (length(Y_mean0_u) == 4){
           Y_mean0_u
         } else {
-          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
+          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[4])
         }
         Y_mean0_l <- if (length(Y_mean0_l) == 4){
           Y_mean0_l
         } else {
-          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
+          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[4])
         }
         Y_hat <- Y_mean0[1] + Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
         Y_hat_u <- Y_mean0_u[1] + Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
@@ -145,12 +166,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         Y_mean0_u <- if (length(Y_mean0_u) == 4){
           Y_mean0_u
         } else {
-          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
+          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[4])
         }
         Y_mean0_l <- if (length(Y_mean0_l) == 4){
           Y_mean0_l
         } else {
-          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
+          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[4])
         }
         Y_hat <- ifelse(t_seq <= Y_mean0[4], Y_mean0[1] + Y_mean0[2] * t_seq,
                         Y_mean0[1] + Y_mean0[2] * Y_mean0[4] + Y_mean0[3] * (t_seq - Y_mean0[4]))
@@ -160,14 +181,15 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                           Y_mean0_l[1] + Y_mean0_l[2] * Y_mean0_l[4] + Y_mean0_l[3] * (t_seq - Y_mean0_l[4]))
       }
       dat_est <- data.frame(time = t_seq, Y_hat = Y_hat, Y_hat_u = Y_hat_u, Y_hat_l = Y_hat_l)
+      dat_est <- .clamp_ci(dat_est, "Y_hat", c("Y_hat_u", "Y_hat_l"), dat_raw$value)
       dat_est$time <- dat_est$time + xstarts
       fig.status <- ggplot(data = dat_est, aes(x = time, y = Y_hat, group = 1)) +
-        geom_line(aes(linetype = "Model Implied Growth Status"), color = "black", size = 1) +
-        geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
-        geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), size = 1) +
+        geom_line(aes(linetype = "Model Implied Growth Status"), color = "black", linewidth = 1) +
+        geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
+        geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
         geom_smooth(data = dat_raw, aes(x = time, y = value, group = 1,
                                         linetype = "Smooth Line of Observed Growth Status"),
-                    color = "black", linewidth = 1, se = F) +
+                    color = "black", linewidth = 1, se = FALSE) +
         labs(x = xlab, y = paste0("Measurement of ", outcome)) +
         scale_linetype_manual(values = c("Model Implied Growth Status" = "solid",
                                          "Smooth Line of Observed Growth Status" = "twodash",
@@ -178,6 +200,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         theme(strip.text.y = element_text(size = 4),
               strip.background = element_rect(color = "white", fill = "white"),
               strip.placement = "outside",
+              legend.text = element_text(size = 10),
+              legend.title = element_text(size = 12),
               legend.position = "bottom",
               legend.box = "vertical")
       figure <- list(fig.status)
@@ -199,7 +223,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
       dat_raw <- dat_raw[order(dat_raw$ID, as.numeric(dat_raw$Wave)), ]
       t_seq <- apply(dat[, paste0(t_var, records[-1])], 2, mean)
       Y_mean0 <- c(mxEvalByName(paste0(y_var, "_mean0"), model = model))
-      Y_mean0_se <- c(mxSE(paste0(y_var, "_mean0"), model, forceName = T))
+      Y_mean0_se <- c(mxSE(paste0(y_var, "_mean0"), model, forceName = TRUE))
       Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
       Y_mean0_l <- Y_mean0 - 1.96 * Y_mean0_se
       if (curveFun %in% c("nonparametric", "NonP")){
@@ -209,9 +233,9 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         dY_hat_l <- Y_mean0_l[2] * rel_rate
         cY_hat <- mxEvalByName(paste0(y_var, "chg_bl_m"), model = model)
         cY_hat_u <- mxEvalByName(paste0(y_var, "chg_bl_m"), model = model) +
-          1.96 * mxSE(paste0(y_var, "chg_bl_m"), model, forceName = T)
+          1.96 * mxSE(paste0(y_var, "chg_bl_m"), model, forceName = TRUE)
         cY_hat_l <- mxEvalByName(paste0(y_var, "chg_bl_m"), model = model) -
-          1.96 * mxSE(paste0(y_var, "chg_bl_m"), model, forceName = T)
+          1.96 * mxSE(paste0(y_var, "chg_bl_m"), model, forceName = TRUE)
       }
       else if (curveFun %in% c("quadratic", "QUAD")){
         dY_hat <- Y_mean0[2] + 2 * Y_mean0[3] * t_seq
@@ -230,12 +254,12 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         Y_mean0_u <- if (length(Y_mean0_u) == 3){
           Y_mean0_u
         } else {
-          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[3])
+          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[3])
         }
         Y_mean0_l <- if (length(Y_mean0_l) == 3){
           Y_mean0_l
         } else {
-          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[3])
+          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[3] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[3])
         }
         dY_hat <- Y_mean0[2] * Y_mean0[3] * exp(-Y_mean0[3] * t_seq)
         dY_hat_u <- Y_mean0_u[2] * Y_mean0_u[3] * exp(-Y_mean0_u[3] * t_seq)
@@ -253,22 +277,24 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         Y_mean0_u <- if (length(Y_mean0_u) == 4){
           Y_mean0_u
         } else {
-          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
+          c(Y_mean0_u, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] + 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[4])
         }
         Y_mean0_l <- if (length(Y_mean0_l) == 4){
           Y_mean0_l
         } else {
-          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = T)[4])
+          c(Y_mean0_l, mxEvalByName(paste0(y_var, "_alpha0"), model = model)[4] - 1.96 * mxSE(paste0(y_var, "_alpha0"), model, forceName = TRUE)[4])
         }
         dY_hat <- Y_mean0[2] + Y_mean0[3] * Y_mean0[4] * exp(Y_mean0[4] * t_seq)
-        dY_hat_u <- Y_mean0_u[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
-        dY_hat_l <- Y_mean0_l[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
+        dY_hat_u <- Y_mean0_u[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
+        dY_hat_l <- Y_mean0_l[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
         cY_hat <- Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
         cY_hat_u <- Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
         cY_hat_l <- Y_mean0_l[2] * t_seq + Y_mean0_l[3] * (exp(Y_mean0_l[4] * t_seq) - 1)
       }
       dat_est <- data.frame(time = t_seq, dY_hat = dY_hat, dY_hat_l = dY_hat_l, dY_hat_u = dY_hat_u,
                             cY_hat = cY_hat, cY_hat_l = cY_hat_l, cY_hat_u = cY_hat_u)
+      dat_est <- .clamp_ci(dat_est, "cY_hat", c("cY_hat_u", "cY_hat_l"), dat_raw$value)
+      dat_est <- .clamp_ci(dat_est, "dY_hat", c("dY_hat_u", "dY_hat_l"))
       dat_est$time <- dat_est$time + xstarts
       fig.CHG_BL <- ggplot(data = dat_est, aes(x = time, y = cY_hat, group = 1)) +
         geom_line(aes(linetype = "Model Implied Change from Baseline"), color = "black", linewidth = 1) +
@@ -276,7 +302,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
         geom_smooth(data = dat_raw, aes(x = time, y = value, group = 1,
                                         linetype = "Smooth Line of Observed Change from Baseline"),
-                    color = "black", size = 1, se = F) +
+                    color = "black", linewidth = 1, se = FALSE) +
         labs(x = xlab, y = paste0("Change from baseline of ", outcome)) +
         scale_linetype_manual(values = c("Model Implied Change from Baseline" = "solid",
                                          "Smooth Line of Observed Change from Baseline" = "twodash",
@@ -287,6 +313,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         theme(strip.text.y = element_text(size = 4),
               strip.background = element_rect(color = "white", fill = "white"),
               strip.placement = "outside",
+              legend.text = element_text(size = 10),
+              legend.title = element_text(size = 12),
               legend.position = "bottom",
               legend.box = "vertical")
       if (curveFun %in% c("nonparametric", "NonP")){
@@ -303,6 +331,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           theme(strip.text.y = element_text(size = 4),
                 strip.background = element_rect(color = "white", fill = "white"),
                 strip.placement = "outside",
+                legend.text = element_text(size = 10),
+                legend.title = element_text(size = 12),
                 legend.position = "bottom",
                 legend.box = "vertical")
       }
@@ -320,6 +350,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           theme(strip.text.y = element_text(size = 4),
                 strip.background = element_rect(color = "white", fill = "white"),
                 strip.placement = "outside",
+                legend.text = element_text(size = 10),
+                legend.title = element_text(size = 12),
                 legend.position = "bottom",
                 legend.box = "vertical")
       }
@@ -347,7 +379,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           dat_est_L <- list()
           for (k in 1:nClass){
             Y_mean0 <- mxEvalByName(paste0("c", k, y_var, "_mean0"), model = model@submodels[[k]])
-            Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = T)
+            Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = TRUE)
             Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
             Y_mean0_l <- Y_mean0 - 1.96 * Y_mean0_se
             if (curveFun %in% c("linear", "LIN")){
@@ -370,13 +402,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                 Y_mean0_u
               } else {
                 c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] +
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
               }
               Y_mean0_l <- if (length(Y_mean0_l) == 3){
                 Y_mean0_l
               } else {
                 c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] -
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
               }
               Y_hat <- Y_mean0[1] + Y_mean0[2] * (1 - exp(-Y_mean0[3] * t_seq))
               Y_hat_u <- Y_mean0_u[1] + Y_mean0_u[2] * (1 - exp(-Y_mean0_u[3] * t_seq))
@@ -392,13 +424,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                 Y_mean0_u
               } else {
                 c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] +
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
               }
               Y_mean0_l <- if (length(Y_mean0_l) == 4){
                 Y_mean0_l
               } else {
                 c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] -
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
               }
               Y_hat <- Y_mean0[1] + Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
               Y_hat_u <- Y_mean0_u[1] + Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
@@ -414,13 +446,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                 Y_mean0_u
               } else {
                 c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] +
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
               }
               Y_mean0_l <- if (length(Y_mean0_l) == 4){
                 Y_mean0_l
               } else {
                 c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] -
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
               }
               Y_hat <- ifelse(t_seq <= Y_mean0[4], Y_mean0[1] + Y_mean0[2] * t_seq,
                               Y_mean0[1] + Y_mean0[2] * Y_mean0[4] + Y_mean0[3] * (t_seq - Y_mean0[4]))
@@ -432,13 +464,14 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
             dat_est_L[[k]] <- data.frame(time = t_seq, Y_hat = Y_hat, Y_hat_u = Y_hat_u, Y_hat_l = Y_hat_l, Class = k)
           }
           dat_est <- do.call(rbind, dat_est_L)
+          dat_est <- .clamp_ci(dat_est, "Y_hat", c("Y_hat_u", "Y_hat_l"), dat_raw$value)
           dat_est$time <- dat_est$time + xstarts
           fig.status <- ggplot(data = dat_est, aes(x = time, y = Y_hat, group = Class, color = as.factor(Class))) +
             geom_line(aes(linetype = "Model Implied Growth Status"), linewidth = 1) +
             geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
             geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
             geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class, linetype = "Smooth Line of Observed Growth Status"),
-                        linewidth = 1, se = F) +
+                        linewidth = 1, se = FALSE) +
             labs(x = xlab, y = paste0("Growth Status of ", outcome), color = "Class") +
             scale_linetype_manual(values = c("Model Implied Growth Status" = "solid",
                                              "Smooth Line of Observed Growth Status" = "twodash",
@@ -452,6 +485,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                   strip.background = element_rect(color = "white", fill = "white"),
                   strip.placement = "outside",
                   legend.position = "bottom",
+                  legend.text = element_text(size = 10),
+                  legend.title = element_text(size = 12),
                   legend.box = "vertical",
                   legend.margin = margin(-3, 0, -3, 0))
           figure <- list(fig.status)
@@ -476,7 +511,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           dat_est_L <- list()
           for (k in 1:nClass){
             Y_mean0 <- mxEvalByName(paste0("c", k, y_var, "_mean0"), model = model@submodels[[k]])
-            Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = T)
+            Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = TRUE)
             Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
             Y_mean0_l <- Y_mean0 - 1.96 * Y_mean0_se
             if (curveFun %in% c("nonparametric", "NonP")){
@@ -487,9 +522,9 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               dY_hat_l <- Y_mean0_l[2] * rel_rate
               cY_hat <- mxEvalByName(paste0("c", k, y_var, "chg_bl_m"), model = model@submodels[[k]])
               cY_hat_u <- mxEvalByName(paste0("c", k, y_var, "chg_bl_m"), model = model@submodels[[k]]) +
-                1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = T)
+                1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = TRUE)
               cY_hat_l <- mxEvalByName(paste0("c", k, y_var, "chg_bl_m"), model = model@submodels[[k]]) -
-                1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = T)
+                1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = TRUE)
             }
             else if (curveFun %in% c("quadratic", "QUAD")){
               dY_hat <- Y_mean0[2] + 2 * Y_mean0[3] * t_seq
@@ -509,13 +544,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                 Y_mean0_u
               } else {
                 c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] +
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
               }
               Y_mean0_l <- if (length(Y_mean0_l) == 3){
                 Y_mean0_l
               } else {
                 c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] -
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
               }
               dY_hat <- Y_mean0[2] * Y_mean0[3] * exp(-Y_mean0[3] * t_seq)
               dY_hat_u <- Y_mean0_u[2] * Y_mean0_u[3] * exp(-Y_mean0_u[3] * t_seq)
@@ -534,17 +569,17 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                 Y_mean0_u
               } else {
                 c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] +
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
               }
               Y_mean0_l <- if (length(Y_mean0_l) == 4){
                 Y_mean0_l
               } else {
                 c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] -
-                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                    1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
               }
               dY_hat <- Y_mean0[2] + Y_mean0[3] * Y_mean0[4] * exp(Y_mean0[4] * t_seq)
-              dY_hat_u <- Y_mean0_u[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
-              dY_hat_l <- Y_mean0_l[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
+              dY_hat_u <- Y_mean0_u[2] + Y_mean0_u[3] * Y_mean0_u[4] * exp(Y_mean0_u[4] * t_seq)
+              dY_hat_l <- Y_mean0_l[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
               cY_hat <- Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
               cY_hat_u <- Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
               cY_hat_l <- Y_mean0_l[2] * t_seq + Y_mean0_l[3] * (exp(Y_mean0_l[4] * t_seq) - 1)
@@ -553,13 +588,15 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                                          cY_hat = cY_hat, cY_hat_l = cY_hat_l, cY_hat_u = cY_hat_u, Class = k)
           }
           dat_est <- do.call(rbind, dat_est_L)
+          dat_est <- .clamp_ci(dat_est, "cY_hat", c("cY_hat_u", "cY_hat_l"), dat_raw$value)
+          dat_est <- .clamp_ci(dat_est, "dY_hat", c("dY_hat_u", "dY_hat_l"))
           dat_est$time <- dat_est$time + xstarts
           fig.CHG_BL <- ggplot(data = dat_est, aes(x = time, y = cY_hat, group = Class, color = as.factor(Class))) +
             geom_line(aes(linetype = "Model Implied Change from Baseline"), linewidth = 1) +
             geom_line(aes(x = time, y = cY_hat_l, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
             geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
             geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class, linetype = "Smooth Line of Observed Change from Baseline"),
-                        linewidth = 1, se = F) +
+                        linewidth = 1, se = FALSE) +
             labs(x = xlab, y = paste0("Change from baseline of ", outcome), color = "Class") +
             scale_linetype_manual(values = c("Model Implied Change from Baseline" = "solid",
                                              "Smooth Line of Observed Change from Baseline" = "twodash",
@@ -573,6 +610,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                   strip.background = element_rect(color = "white", fill = "white"),
                   strip.placement = "outside",
                   legend.position = "bottom",
+                  legend.text = element_text(size = 10),
+                  legend.title = element_text(size = 12),
                   legend.box = "vertical",
                   legend.margin = margin(-3, 0, -3, 0))
           if (curveFun %in% c("nonparametric", "NonP")){
@@ -591,6 +630,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               theme(strip.text.y = element_text(size = 4),
                     strip.background = element_rect(color = "white", fill = "white"),
                     strip.placement = "outside",
+                    legend.text = element_text(size = 10),
+                    legend.title = element_text(size = 12),
                     legend.position = "bottom",
                     legend.box = "vertical",
                     legend.margin = margin(-3, 0, -3, 0))
@@ -611,6 +652,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               theme(strip.text.y = element_text(size = 4),
                     strip.background = element_rect(color = "white", fill = "white"),
                     strip.placement = "outside",
+                    legend.text = element_text(size = 10),
+                    legend.title = element_text(size = 12),
                     legend.position = "bottom",
                     legend.box = "vertical",
                     legend.margin = margin(-3, 0, -3, 0))
@@ -639,7 +682,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         dat_est_L <- list()
         for (k in 1:nClass){
           Y_mean0 <- mxEvalByName(paste0("c", k, y_var, "_mean0"), model = model@submodels[[k]])
-          Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = T)
+          Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = TRUE)
           Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
           Y_mean0_l <- Y_mean0 - 1.96 * Y_mean0_se
           if (curveFun %in% c("linear", "LIN")){
@@ -662,13 +705,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               Y_mean0_u
             } else {
               c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] +
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
             }
             Y_mean0_l <- if (length(Y_mean0_l) == 3){
               Y_mean0_l
             } else {
               c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] -
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
             }
             Y_hat <- Y_mean0[1] + Y_mean0[2] * (1 - exp(-Y_mean0[3] * t_seq))
             Y_hat_u <- Y_mean0_u[1] + Y_mean0_u[2] * (1 - exp(-Y_mean0_u[3] * t_seq))
@@ -684,13 +727,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               Y_mean0_u
             } else {
               c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] +
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
             }
             Y_mean0_l <- if (length(Y_mean0_l) == 4){
               Y_mean0_l
             } else {
               c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] -
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
             }
             Y_hat <- Y_mean0[1] + Y_mean0[2] * t_seq + Y_mean0[3] * (exp(Y_mean0[4] * t_seq) - 1)
             Y_hat_u <- Y_mean0_u[1] + Y_mean0_u[2] * t_seq + Y_mean0_u[3] * (exp(Y_mean0_u[4] * t_seq) - 1)
@@ -706,13 +749,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               Y_mean0_u
             } else {
               c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] +
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
             }
             Y_mean0_l <- if (length(Y_mean0_l) == 4){
               Y_mean0_l
             } else {
               c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] -
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
             }
             Y_hat <- ifelse(t_seq <= Y_mean0[4], Y_mean0[1] + Y_mean0[2] * t_seq,
                             Y_mean0[1] + Y_mean0[2] * Y_mean0[4] + Y_mean0[3] * (t_seq - Y_mean0[4]))
@@ -724,13 +767,14 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           dat_est_L[[k]] <- data.frame(time = t_seq, Y_hat = Y_hat, Y_hat_u = Y_hat_u, Y_hat_l = Y_hat_l, Class = k)
         }
         dat_est <- do.call(rbind, dat_est_L)
+        dat_est <- .clamp_ci(dat_est, "Y_hat", c("Y_hat_u", "Y_hat_l"), dat_raw$value)
         dat_est$time <- dat_est$time + xstarts
         fig.status <- ggplot(data = dat_est, aes(x = time, y = Y_hat, group = Class, color = as.factor(Class))) +
           geom_line(aes(linetype = "Model Implied Growth Status"), linewidth = 1) +
           geom_line(aes(x = time, y = Y_hat_l, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
           geom_line(aes(x = time, y = Y_hat_u, linetype = "95% Confidence Interval on Model Implied Growth Status"), linewidth = 1) +
           geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class, linetype = "Smooth Line of Observed Growth Status"),
-                      linewidth = 1, se = F) +
+                      linewidth = 1, se = FALSE) +
           labs(x = xlab, y = paste0("Growth Status of ", outcome), color = "Class") +
           scale_linetype_manual(values = c("Model Implied Growth Status" = "solid",
                                            "Smooth Line of Observed Growth Status" = "twodash",
@@ -743,6 +787,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           theme(strip.text.y = element_text(size = 4),
                 strip.background = element_rect(color = "white", fill = "white"),
                 strip.placement = "outside",
+                legend.text = element_text(size = 10),
+                legend.title = element_text(size = 12),
                 legend.position = "bottom",
                 legend.box = "vertical",
                 legend.margin = margin(-3, 0, -3, 0))
@@ -768,7 +814,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
         dat_est_L <- list()
         for (k in 1:nClass){
           Y_mean0 <- mxEvalByName(paste0("c", k, y_var, "_mean0"), model = model@submodels[[k]])
-          Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = T)
+          Y_mean0_se <- mxSE(paste0("Class", k, ".c", k, y_var, "_mean0"), model, forceName = TRUE)
           Y_mean0_u <- Y_mean0 + 1.96 * Y_mean0_se
           Y_mean0_l <- Y_mean0 - 1.96 * Y_mean0_se
           if (curveFun %in% c("nonparametric", "NonP")){
@@ -779,9 +825,9 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
             dY_hat_l <- Y_mean0_l[2] * rel_rate
             cY_hat <- mxEvalByName(paste0("c", k, y_var, "chg_bl_m"), model = model@submodels[[k]])
             cY_hat_u <- mxEvalByName(paste0("c", k, y_var, "chg_bl_m"), model = model@submodels[[k]]) +
-              1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = T)
+              1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = TRUE)
             cY_hat_l <- mxEvalByName(paste0("c", k, y_var, "chg_bl_m"), model = model@submodels[[k]]) -
-              1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = T)
+              1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "chg_bl_m"), model, forceName = TRUE)
           }
           else if (curveFun %in% c("quadratic", "QUAD")){
             dY_hat <- Y_mean0[2] + 2 * Y_mean0[3] * t_seq
@@ -801,13 +847,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               Y_mean0_u
             } else {
               c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] +
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
             }
             Y_mean0_l <- if (length(Y_mean0_l) == 3){
               Y_mean0_l
             } else {
               c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[3] -
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[3])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[3])
             }
             dY_hat <- Y_mean0[2] * Y_mean0[3] * exp(-Y_mean0[3] * t_seq)
             dY_hat_u <- Y_mean0_u[2] * Y_mean0_u[3] * exp(-Y_mean0_u[3] * t_seq)
@@ -826,13 +872,13 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
               Y_mean0_u
             } else {
               c(Y_mean0_u, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] +
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
             }
             Y_mean0_l <- if (length(Y_mean0_l) == 4){
               Y_mean0_l
             } else {
               c(Y_mean0_l, mxEvalByName(paste0("c", k, y_var, "_alpha0"), model = model@submodels[[k]])[4] -
-                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = T)[4])
+                  1.96 * mxSE(paste0("Class", k, ".c", k, y_var, "_alpha0"), model, forceName = TRUE)[4])
             }
             dY_hat <- Y_mean0[2] + Y_mean0[3] * Y_mean0[4] * exp(Y_mean0[4] * t_seq)
             dY_hat_u <- Y_mean0_u[2] + Y_mean0_l[3] * Y_mean0_l[4] * exp(Y_mean0_l[4] * t_seq)
@@ -845,6 +891,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
                                        cY_hat = cY_hat, cY_hat_l = cY_hat_l, cY_hat_u = cY_hat_u, Class = k)
         }
         dat_est <- do.call(rbind, dat_est_L)
+        dat_est <- .clamp_ci(dat_est, "cY_hat", c("cY_hat_u", "cY_hat_l"), dat_raw$value)
+        dat_est <- .clamp_ci(dat_est, "dY_hat", c("dY_hat_u", "dY_hat_l"))
         dat_est$time <- dat_est$time + xstarts
         fig.CHG_BL <- ggplot(data = dat_est, aes(x = time, y = cY_hat, group = Class, color = as.factor(Class))) +
           geom_line(aes(linetype = "Model Implied Change from Baseline"),  linewidth = 1) +
@@ -852,7 +900,7 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           geom_line(aes(x = time, y = cY_hat_u, linetype = "95% Confidence Interval on Model Implied Change from Baseline"), linewidth = 1) +
           geom_smooth(data = dat_raw, aes(x = time, y = value, group = Class,
                                           linetype = "Smooth Line of Observed Change from Baseline"),
-                      linewidth = 1, se = F) +
+                      linewidth = 1, se = FALSE) +
           labs(x = xlab, y = paste0("Change from baseline of ", outcome), color = "Class") +
           scale_linetype_manual(values = c("Model Implied Change from Baseline" = "solid",
                                            "Smooth Line of Observed Change from Baseline" = "twodash",
@@ -865,6 +913,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
           theme(strip.text.y = element_text(size = 4),
                 strip.background = element_rect(color = "white", fill = "white"),
                 strip.placement = "outside",
+                legend.text = element_text(size = 10),
+                legend.title = element_text(size = 12),
                 legend.position = "bottom",
                 legend.box = "vertical",
                 legend.margin = margin(-3, 0, -3, 0))
@@ -884,6 +934,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
             theme(strip.text.y = element_text(size = 4),
                   strip.background = element_rect(color = "white", fill = "white"),
                   strip.placement = "outside",
+                  legend.text = element_text(size = 10),
+                  legend.title = element_text(size = 12),
                   legend.position = "bottom",
                   legend.box = "vertical",
                   legend.margin = margin(-3, 0, -3, 0))
@@ -904,6 +956,8 @@ getFitFig <- function(model, nClass, cluster_TIC, grp_var, sub_Model, t_var, rec
             theme(strip.text.y = element_text(size = 4),
                   strip.background = element_rect(color = "white", fill = "white"),
                   strip.placement = "outside",
+                  legend.text = element_text(size = 10),
+                  legend.title = element_text(size = 12),
                   legend.position = "bottom",
                   legend.box = "vertical",
                   legend.margin = margin(-3, 0, -3, 0))

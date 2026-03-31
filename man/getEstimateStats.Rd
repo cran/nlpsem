@@ -38,7 +38,7 @@ package, which contains a dataframe with point estimates and standard errors.}
 \value{
 An object of class \code{StatsOutput} with potential slots:
 \itemize{
-  \item \code{wald}: Contains a data frame with, point estimates, standard errors p-values, and Wald confidence intervals
+  \item \code{wald}: Contains a data frame with, point estimates, standard errors, p-values, and Wald confidence intervals
   (when specified).
   \item \code{likelihood}: Contains a data frame with likelihood-based confidence intervals (when specified).
   \item \code{bootstrap}: Contains a data frame with bootstrap confidence intervals (when specified).
@@ -46,7 +46,7 @@ An object of class \code{StatsOutput} with potential slots:
 The content of these slots can be printed using the \code{printTable()} method for S4 objects.
 }
 \description{
-This function calculates p-values and confidence intervals (CIs) of parameters for a given model.It supports
+This function calculates p-values and confidence intervals (CIs) of parameters for a given model. It supports
 different types of CIs, including Wald CIs, likelihood-based CIs, bootstrap CIs, or all three.
 }
 \examples{
@@ -70,37 +70,28 @@ RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
 RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
 \donttest{
 # Fit bilinear spline latent growth curve model (fixed knots)
-paraBLS_LGCM.r <- c(
-  "mueta0", "mueta1", "mueta2", "knot",
-  paste0("psi", c("00", "01", "02", "11", "12", "22")),
-  "residuals"
-  )
 BLS_LGCM_r <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-  records = 1:9, res_scale = 0.1, paramOut = TRUE, names = paraBLS_LGCM.r)
+  records = 1:9, paramOut = TRUE)
 ## Generate P value and Wald confidence intervals
 getEstimateStats(
   est_in = BLS_LGCM_r@Estimates, CI_type = "Wald"
   )
+}
+\dontrun{
 # Fit bilinear spline latent growth curve model (random knots) with time-invariant covariates for
 # mathematics development
-## Define parameter names
-paraBLS.TIC_LGCM.f <- c(
-  "alpha0", "alpha1", "alpha2", "alphag",
-  paste0("psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")), "residuals",
-  paste0("beta1", c(0:2, "g")), paste0("beta2", c(0:2, "g")), paste0("mux", 1:2),
-  paste0("phi", c("11", "12", "22")), "mueta0", "mueta1", "mueta2", "mu_knot"
-  )
 ## Fit the model
+set.seed(20191029)
 BLS_LGCM.TIC_f <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE, records = 1:9,
-  growth_TIC = c("ex1", "ex2"), res_scale = 0.1, paramOut = TRUE, names = paraBLS.TIC_LGCM.f
+  growth_TIC = c("ex1", "ex2"), tries = 20, paramOut = TRUE
   )
 ## Change optimizer to "SLSQP" for getting likelihood-based confidence interval
 mxOption(model = NULL, key = "Default optimizer", "SLSQP", reset = FALSE)
 ## Generate P value and all three types of confidence intervals
 getEstimateStats(
-  model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 1000
+  model = BLS_LGCM.TIC_f@mxOutput, est_in = BLS_LGCM.TIC_f@Estimates, CI_type = "all", rep = 20
   )
 }
 
@@ -114,4 +105,7 @@ getEstimateStats(
   Biometrika, 75(1), 139-144. Oxford University Press. \url{https://www.jstor.org/stable/2336444}}
   \item {Efron, B. & Tibshirani, R. J. (1994). An Introduction to the Bootstrap. CRC press.}
 }
+}
+\seealso{
+\code{\link{getLGCM}}, \code{\link{getIndFS}}, \code{\link{getPosterior}}
 }

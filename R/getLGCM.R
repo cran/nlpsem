@@ -17,9 +17,9 @@
 #' variability of growth factors if any. Default is \code{NULL}, indicating no growth TICs are included in the model.
 #' @param starts A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified
 #' initial values.
-#' @param res_scale A numeric value representing the scaling factor for the initial calculation of the residual variance. This
-#' value should be between \code{0} and \code{1}, exclusive. By default, this is \code{NULL}, as it is unnecessary when the
-#' user specifies the initial values using the \code{starts} argument.
+#' @param res_scale An optional numeric value representing the scaling factor for the initial calculation of the residual
+#' variance. This value should be between \code{0} and \code{1}, exclusive. Default is \code{NULL}, in which case data-driven
+#' residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is applied as fallback.
 #' @param tries An integer specifying the number of additional optimization attempts. Default is \code{NULL}.
 #' @param OKStatus An integer (vector) specifying acceptable status codes for convergence. Default is \code{0}.
 #' @param jitterD A string specifying the distribution for jitter. Supported values are: \code{"runif"} (uniform
@@ -27,7 +27,8 @@
 #' @param loc A numeric value representing the location parameter of the jitter distribution. Default is \code{1}.
 #' @param scale A numeric value representing the scale parameter of the jitter distribution. Default is \code{0.25}.
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
-#' @param names A character vector specifying parameter names. Default is \code{NULL}.
+#' @param names A character vector specifying parameter names. Default is \code{NULL}, in which case
+#' meaningful names are automatically generated based on the model configuration.
 #'
 #' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
 #' \itemize{
@@ -45,6 +46,8 @@
 #'   \item {Sterba, S. K. (2014). "Fitting Nonlinear Latent Growth Curve Models With Individually Varying Time Points". Structural
 #'   Equation Modeling: A Multidisciplinary Journal, 21(4), 630-647. \doi{10.1080/10705511.2014.919828}}
 #' }
+#'
+#' @seealso \code{\link{getLCSM}}, \code{\link{getTVCmodel}}, \code{\link{getFigure}}
 #'
 #' @export
 #'
@@ -72,23 +75,16 @@
 #' # Fit bilinear spline latent growth curve model (fixed knots)
 #' BLS_LGCM_r <- getLGCM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-#'   intrinsic = FALSE, records = 1:9, growth_TIC = NULL, res_scale = 0.1
+#'   intrinsic = FALSE, records = 1:9, growth_TIC = NULL
 #' )
 #' # Fit bilinear spline latent growth curve model (random knots) with
 #' # time-invariant covariates for mathematics development
-#' ## Define parameter names
-#' paraBLS.TIC_LGCM.f <- c(
-#'   "alpha0", "alpha1", "alpha2", "alphag",
-#'   paste0("psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")),
-#'   "residuals", paste0("beta1", c(0:2, "g")), paste0("beta2", c(0:2, "g")),
-#'   paste0("mux", 1:2), paste0("phi", c("11", "12", "22")),
-#'   "mueta0", "mueta1", "mueta2", "mu_knot"
-#' )
 #' ## Fit the model
+#' set.seed(20191029)
 #' BLS_LGCM.TIC_f <- getLGCM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-#'   intrinsic = TRUE, records = 1:9, growth_TIC = c("ex1", "ex2"), res_scale = 0.1,
-#'   paramOut = TRUE, names = paraBLS.TIC_LGCM.f
+#'   intrinsic = TRUE, records = 1:9, growth_TIC = c("ex1", "ex2"),
+#'   tries = 20, paramOut = TRUE
 #' )
 #' ## Output point estimate and standard errors
 #' printTable(BLS_LGCM.TIC_f)
@@ -100,34 +96,32 @@
 getLGCM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, growth_TIC = NULL, starts = NULL,
                     res_scale = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
                     paramOut = FALSE, names = NULL){
-  if (paramOut & is.null(names)){
-    stop("Please provide the original parameters if you want to obtain them!")
-  }
-  if (res_scale <= 0 | res_scale >= 1){
-    stop("Please enter a value between 0 and 1 (exclusive) for res_scale!")
-  }
-  if (intrinsic & curveFun %in% c("linear", "LIN", "quadratic", "QUAD")){
-    stop("An intrinsic nonlinear function should be negative exponential, Jenss-Bayley, or bilinear spline for a LGCM!")
-  }
+  dat <- as.data.frame(dat)
+  validate_paramOut(paramOut, names)
+  validate_res_scale(res_scale)
+  validate_curveFun(curveFun)
+  validate_intrinsic(intrinsic, curveFun, model_type = "LGCM")
+  validate_columns(dat, t_var = t_var, y_var = y_var, records = records,
+                   growth_TIC = growth_TIC)
   ## Derive initial values for the parameters of interest if not specified by users
   if (is.null(starts)){
     starts <- getUNI.initial(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, records = records,
-                             growth_TIC = growth_TIC, res_scale = res_scale)
+                             growth_TIC = growth_TIC, res_scale = res_scale, intrinsic = intrinsic)
   }
   ## Build up a latent growth curve model, with or without TICs
   model_mx <- getLGCM.mxModel(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, intrinsic = intrinsic,
                               records = records, growth_TIC = growth_TIC, starts = starts)
   ## Optimize the constructed latent growth curve model
   if (!is.null(tries)){
-    model0 <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
+    model <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
                         loc = loc, scale = scale)
-    model <- mxRun(model0)
   }
   else{
     model <- mxRun(model_mx)
   }
   ## Print out the point estimates and standard errors for the parameters of interest
   if(paramOut){
+    if (is.null(names)) names <- .auto_names_LGCM(curveFun, intrinsic, growth_TIC)
     LGCM_output <- getLGCM.output(model = model, growth_TIC = growth_TIC, names = names)
     model <- new("myMxOutput", mxOutput = model, Estimates = LGCM_output)
   }
@@ -136,4 +130,3 @@ getLGCM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, grow
   }
   return(model)
 }
-

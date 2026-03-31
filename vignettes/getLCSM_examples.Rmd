@@ -14,6 +14,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+has_data <- nzchar(system.file("extdata", "getLCSM_examples.RData", package = "nlpsem"))
+knitr::opts_chunk$set(eval = has_data)
 ```
 
 ## Load nlpsem package, dependent packages and set CSOLNP as the optimizer
@@ -53,29 +55,15 @@ xstarts <- mean(baseT)/12
 
 ## Example 1: Fit nonparametric LCSMs to assess the development of reading ability from Kindergarten to Grade 5, both with and without incorporating baseline teacher-reported approach to learning and attentional focus. The `getSummary()` function is used to generate a comprehensive summary table for these two models. Additionally, the visual representations of the growth rate and change from the baseline for both models.
 ```{r, message = FALSE, eval = FALSE}
-paraNonP_LCSM <- c(
-  c("mueta0", "mueta1", paste0("psi", c("00", "01", "11")), paste0("rel_rate", 2:8),
-    "residuals", paste0("slp_val_est", 1:8), paste0("slp_var_est", 1:8),
-    paste0("chg_inv_val_est", 1:8), paste0("chg_inv_var_est", 1:8),
-    paste0("chg_bl_val_est", 1:8), paste0("chg_bl_var_est", 1:8))
-  )
 Read_LCSM_NonP <- getLCSM(
   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "nonparametric",
-  intrinsic = FALSE, records = 1:9, growth_TIC = NULL, res_scale = 0.1, 
-  paramOut = TRUE, names = paraNonP_LCSM
-  )
-paraNonP_LCSM_TIC <- c(
-  c("alpha0", "alpha1", paste0("psi", c("00", "01", "11")), paste0("rel_rate", 2:8),
-    "residuals", paste0("beta1", c(0:1)), paste0("beta2", c(0:1)),
-    paste0("mux", 1:2), paste0("phi", c("11", "12", "22")), "mueta0", "mueta1",
-    paste0("slp_val_est", 1:8), paste0("slp_var_est", 1:8),
-    paste0("chg_inv_val_est", 1:8), paste0("chg_inv_var_est", 1:8),
-    paste0("chg_bl_val_est", 1:8), paste0("chg_bl_var_est", 1:8))
+  intrinsic = FALSE, records = 1:9, growth_TIC = NULL,
+  paramOut = TRUE
   )
 Read_LCSM_NonP_TIC <- getLCSM(
   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "nonparametric",
-  intrinsic = FALSE, records = 1:9, growth_TIC = c("ex1", "ex2"), res_scale = 0.1, 
-  paramOut = TRUE, names = paraNonP_LCSM_TIC
+  intrinsic = FALSE, records = 1:9, growth_TIC = c("ex1", "ex2"),
+  paramOut = TRUE
   )
 ```
 
@@ -100,17 +88,17 @@ show(Figure2)
 ```{r, message = FALSE, eval = FALSE}
 Read_LCSM_QUAD <- getLCSM(
   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "quadratic", intrinsic = FALSE,
-  records = 1:9, res_scale = 0.1
+  records = 1:9, paramOut = TRUE
   )
 set.seed(20191029)
 Read_LCSM_EXP_r <- getLCSM(
   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "negative exponential",
-  intrinsic = FALSE, records = 1:9, res_scale = 0.1, tries = 10
+  intrinsic = FALSE, records = 1:9, tries = 10, paramOut = TRUE
   )
 set.seed(20191029)
 Read_LCSM_JB_r <- getLCSM(
   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "Jenss-Bayley",
-  intrinsic = FALSE, records = 1:9, res_scale = 0.1, tries = 10
+  intrinsic = FALSE, records = 1:9, tries = 10, paramOut = TRUE
   )
 ```
 

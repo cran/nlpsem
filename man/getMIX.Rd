@@ -70,25 +70,25 @@ include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}
 \code{NULL} as it is unnecessary when \code{sub_Model} is \code{"MED"}.}
 
 \item{y_model}{A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
-By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.}
+By default, this is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.}
 
 \item{m_var}{A string that specifies the prefix of the column names corresponding to the mediator variable at each study wave.
-By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.}
+By default, this is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"MED"}.}
 
 \item{x_type}{A string indicating the type of predictor variable used in the model. Supported values are \code{"baseline"}
-and \code{"longitudinal"}. By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.}
+and \code{"longitudinal"}. By default, this is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"MED"}.}
 
 \item{x_var}{A string specifying the baseline predictor if \code{x_type = "baseline"}, or the prefix of the column names
 corresponding to the predictor variable at each study wave if \code{x_type = "longitudinal"}. By default, this is \code{NULL} as
-this argument only requires when \code{sub_Model} is \code{"MED"}.}
+this argument is only required when \code{sub_Model} is \code{"MED"}.}
 
 \item{TVC}{A string that specifies the prefix of the column names corresponding to the time-varying covariate at each time
-point. By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"TVC"}.}
+point. By default, this is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"TVC"}.}
 
 \item{decompose}{An integer specifying the decomposition option for temporal states. Supported values include \code{0} (no
 decomposition), \code{1} (decomposition with interval-specific slopes as temporal states), \code{2} (decomposition with interval-
 specific changes as temporal states), and \code{3} (decomposition with change-from-baseline as temporal states). By default, this
-is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"TVC"}.}
+is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"TVC"}.}
 
 \item{growth_TIC}{A string or character vector of column names of time-invariant covariate(s) accounting for the variability
 of growth factors if any. Default is \code{NULL}, indicating no growth TICs present in the model.}
@@ -96,13 +96,15 @@ of growth factors if any. Default is \code{NULL}, indicating no growth TICs pres
 \item{starts}{A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified
 initial values.}
 
-\item{res_scale}{A list where each element is a (vector of) numeric scaling factor(s) for residual variance to calculate the
-corresponding initial value for a latent class, between \code{0} and \code{1} exclusive. By default, this is \code{NULL}, as it
-is unnecessary when the user specifies the initial values using the \code{starts} argument.}
+\item{res_scale}{An optional list where each element is a (vector of) numeric scaling factor(s) for residual variance to
+calculate the corresponding initial value for a latent class, between \code{0} and \code{1} exclusive. Default is \code{NULL},
+in which case data-driven residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is
+applied as fallback.}
 
-\item{res_cor}{A list where each element is a (vector of) numeric initial value(s) for residual correlation in each class. It
-needs to be specified if the sub_Model is \code{"TVC"} (when \code{decompose != 0}), \code{"MGM"}, or \code{"MED"}. By default,
-this is \code{NULL}, as it is unnecessary when the user specifies the initial values using the \code{starts} argument.}
+\item{res_cor}{An optional list where each element is a (vector of) numeric initial value(s) for residual correlation in each
+class. Applicable when the sub_Model is \code{"TVC"} (when \code{decompose != 0}), \code{"MGM"}, or \code{"MED"}. Default is
+\code{NULL}, in which case data-driven residual correlation estimation is used. If data-driven estimation fails, a heuristic
+of \code{0.3} is applied as fallback.}
 
 \item{tries}{An integer specifying the number of additional optimization attempts. Default is \code{NULL}.}
 
@@ -117,7 +119,8 @@ distribution), \code{"rnorm"} (normal distribution), and \code{"rcauchy"} (Cauch
 
 \item{paramOut}{A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.}
 
-\item{names}{A character vector specifying parameter names. Default is \code{NULL}.}
+\item{names}{A character vector specifying parameter names. Default is \code{NULL}, in which case
+meaningful names are automatically generated based on the model configuration.}
 }
 \value{
 An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
@@ -163,24 +166,16 @@ RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
 MIX_BLS_LGCM.TIC_r <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM",
   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9,
-  curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
+  curveFun = "BLS", intrinsic = FALSE
   )
 # Fit longitudinal mixture group model of bilinear spline functional form with fixed knot
 # (3 classes)
-paraBLS.TIC_LGCM.r <- c(
-  "alpha0", "alpha1", "alpha2", "knot",
-  paste0("psi", c("00", "01", "02", "11", "12", "22")), "residuals",
-  paste0("beta1", 0:2), paste0("beta2", 0:2),
-  paste0("mux", 1:2), paste0("phi", c("11", "12", "22")),
-  "mueta0", "mueta1", "mueta2"
-)
 set.seed(20191029)
 MIX_BLS_LGCM.TIC_r <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
   cluster_TIC = c("gx1", "gx2"), y_var = "M", t_var = "T", records = 1:9,
-  curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
-  growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE,
-  names = paraBLS.TIC_LGCM.r
+  curveFun = "BLS", intrinsic = FALSE,
+  growth_TIC = c("ex1", "ex2"), tries = 10, paramOut = TRUE
 )
 printTable(MIX_BLS_LGCM.TIC_r)
 }
@@ -189,14 +184,16 @@ printTable(MIX_BLS_LGCM.TIC_r)
 \references{
 \itemize{
   \item {Liu, J., & Perera, R. A. (2022). Extending Mixture of Experts Model to Investigate Heterogeneity of Trajectories:
-  When, Where and How to Add Which Covariates. Psychological Methods (Advance online publication).
-  \doi{10.1037/met0000436}}
+  When, Where and How to Add Which Covariates. Psychological Methods, 28(1), 152-178. \doi{10.1037/met0000436}}
   \item {Liu, J., & Perera, R. A. (2022). Extending Growth Mixture Model to Assess Heterogeneity in Joint Development with
-  Piecewise Linear Trajectories in the Framework of Individual Measurement Occasions. Psychological Methods (Advance online
-  publication). \doi{10.1037/met0000500}}
+  Piecewise Linear Trajectories in the Framework of Individual Measurement Occasions. Psychological Methods, 28(5), 1029-1051.
+  \doi{10.1037/met0000500}}
   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
-  Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
+  Occasions: A New Perspective on Growth Curves. Behavior Research Methods, 56(3), 1349-1375. \doi{10.3758/s13428-023-02097-2}}
   \item {Liu, J. (2023). Further Exploration of the Effects of Time-varying Covariate in Growth Mixture Models with Nonlinear
-  Trajectories. Behavior Research Methods. \doi{10.3758/s13428-023-02183-5}}
+  Trajectories. Behavior Research Methods, 56(4), 2804-2827. \doi{10.3758/s13428-023-02183-5}}
 }
+}
+\seealso{
+\code{\link{getLGCM}}, \code{\link{getLCSM}}, \code{\link{getMGroup}}, \code{\link{getFigure}}
 }

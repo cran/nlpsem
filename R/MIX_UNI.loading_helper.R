@@ -27,6 +27,7 @@
 #' for latent change score models) and factor loadings of a univariate longitudinal outcome.
 #'
 #' @keywords internal
+#' @noRd
 #'
 getMIX_UNI.loadings <- function(nClass, y_model, t_var, records, y_var, curveFun, intrinsic){
   # Define `outPoint` to store individual time points from raw data
@@ -34,7 +35,7 @@ getMIX_UNI.loadings <- function(nClass, y_model, t_var, records, y_var, curveFun
   for (k in 1:nClass){
     outPoint <- list()
     for (j in records){
-      outPoint[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var, j),
+      outPoint[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var, j),
                                 name = paste0("t", j))
     }
     if (y_model == "LGCM"){
@@ -101,10 +102,10 @@ getMIX_UNI.loadings <- function(nClass, y_model, t_var, records, y_var, curveFun
           for(j in records){
             outLoads1[[j]] <- mxAlgebraFromString(paste0("t", j, " - c", k, "Y_mug"),
                                                   name = paste0("c", k, "L1", j))
-            outLoads2[[j]] <- mxAlgebraFromString(paste0("abs(t", j, " - c", k, "Y_mug)"),
+            outLoads2[[j]] <- mxAlgebraFromString(paste0("sqrt((t", j, " - c", k, "Y_mug)^2 + 1e-6)"),
                                                   name = paste0("c", k, "L2", j))
-            outLoads3[[j]] <- mxAlgebraFromString(paste0("-c", k, "Y_mueta2s * (t", j, " - c", k, "Y_mug)/abs(t", j,
-                                                         " - c", k, "Y_mug) - c", k, "Y_mueta2s"),
+            outLoads3[[j]] <- mxAlgebraFromString(paste0("-c", k, "Y_mueta2s * (t", j, " - c", k, "Y_mug)/sqrt((t", j,
+                                                         " - c", k, "Y_mug)^2 + 1e-6) - c", k, "Y_mueta1s"),
                                                   name = paste0("c", k, "L3", j))
           }
           outLoads <- list(outLoads1, outLoads2, outLoads3)
@@ -201,4 +202,3 @@ getMIX_UNI.loadings <- function(nClass, y_model, t_var, records, y_var, curveFun
   }
   return(output_CL)
 }
-

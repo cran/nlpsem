@@ -14,6 +14,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+has_data <- nzchar(system.file("extdata", "getLGCM_examples.RData", package = "nlpsem"))
+knitr::opts_chunk$set(eval = has_data)
 ```
 
 ## Load nlpsem package, dependent packages and set CSOLNP as the optimizer
@@ -55,11 +57,11 @@ xstarts <- mean(baseT)
 ```{r, message = FALSE, eval = FALSE}
 Math_LGCM_BLS_f <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-  intrinsic = TRUE, records = 1:9, growth_TIC = NULL, res_scale = 0.1
+  intrinsic = TRUE, records = 1:9, growth_TIC = NULL, tries = 10
 )
 Math_LGCM_BLS_r <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-  intrinsic = FALSE, records = 1:9, growth_TIC = NULL, res_scale = 0.1
+  intrinsic = FALSE, records = 1:9, growth_TIC = NULL, tries = 10
 )
 ```
 
@@ -73,18 +75,10 @@ The output illustrates a difference of $4$ degrees of freedom between the full m
 
 ## Example 2: Fit the full bilinear spline LGCM to assess the development of mathematics skill from Kindergarten to Grade 5. This model includes two growth time-invariant covariates (TICs), baseline values of teacher-reported approach to learning and attentional focus. Point estimates and corresponding standard errors (SEs) of all parameters are presented within the original parameter space. The plot of the growth status of mathematics ability is also provided.
 ```{r, message = FALSE, eval = FALSE}
-paraBLS.TIC_LGCM.f <- c(
-  "alpha0", "alpha1", "alpha2", "alphag", 
-  paste0("psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")),
-  "residuals", 
-  paste0("beta1", c(0:2, "g")), paste0("beta2", c(0:2, "g")),
-  paste0("mux", 1:2), paste0("phi", c("11", "12", "22")), 
-  "mueta0", "mueta1", "mueta2", "mu_knot"
-  )
 Math_LGCM_TIC_BLS_f <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-  intrinsic = TRUE, records = 1:9, growth_TIC = c("ex1", "ex2"), res_scale = 0.1, 
-  paramOut = TRUE, names = paraBLS.TIC_LGCM.f
+  intrinsic = TRUE, records = 1:9, growth_TIC = c("ex1", "ex2"),
+  tries = 10, paramOut = TRUE
   )
 ```
 

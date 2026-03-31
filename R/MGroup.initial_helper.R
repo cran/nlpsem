@@ -43,8 +43,9 @@
 #' from \code{getMGroup()}.
 #' @param growth_TIC A string or character vector of column names of time-invariant covariate(s) accounting for the variability
 #' of growth factors if any. It takes the value passed from \code{getMGroup()}.
-#' @param res_scale A list where each element is a (vector of) numeric scaling factor(s) for residual variance to calculate the
-#' corresponding initial value for a latent class, between \code{0} and \code{1} exclusive. It takes the value passed from \code{getMGroup()}.
+#' @param res_scale An optional list where each element is a (vector of) numeric scaling factor(s) for residual variance to
+#' calculate the corresponding initial value for a latent class, between \code{0} and \code{1} exclusive, or \code{NULL} (default)
+#' to use data-driven estimation with a heuristic of \code{0.1} as fallback. It takes the value passed from \code{getMGroup()}.
 #' @param res_cor A list where each element is a (vector of) numeric initial value(s) for residual correlation in each class. It
 #' needs to be specified if the sub_Model is \code{"TVC"} (when \code{decompose != 0}), \code{"MGM"}, or \code{"MED"}. It takes the value
 #' passed from \code{getMGroup()}.
@@ -53,16 +54,20 @@
 #' A list containing initial values for each class in the specified model.
 #'
 #' @keywords internal
+#' @noRd
 #'
-getMGroup.initial <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, curveFun, records, m_var, x_var,
+getMGroup.initial <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, curveFun, intrinsic, records, m_var, x_var,
                               x_type, TVC, decompose, growth_TIC, res_scale, res_cor){
   # Initialize an empty list for starts
   starts <- list()
+  # Helper to safely extract list element (returns NULL when res_scale is NULL)
+  .safe_k <- function(x, k) if (is.null(x)) NULL else x[[k]]
   # Case 1: LGCMs or LCSMs
   if (sub_Model %in% c("LGCM", "LCSM")){
     for (k in 1:nClass){
       starts[[k]] <- getUNI.initial(dat = dat[dat[, grp_var] == k, ], t_var = t_var, y_var = y_var, curveFun = curveFun,
-                                    records = records, growth_TIC = growth_TIC, res_scale = res_scale[[k]])
+                                    records = records, growth_TIC = growth_TIC, res_scale = .safe_k(res_scale, k),
+                                    intrinsic = intrinsic)
     }
   }
   # Case 2: TVC model
@@ -71,12 +76,12 @@ getMGroup.initial <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, cur
       if (decompose == 0){
         starts[[k]] <- getTVC.initial(dat = dat[dat[, grp_var] == k, ], t_var = t_var, y_var = y_var, curveFun = curveFun,
                                       records = records, growth_TIC = growth_TIC, TVC = TVC, decompose = decompose,
-                                      res_scale = res_scale[[k]])
+                                      res_scale = .safe_k(res_scale, k), intrinsic = intrinsic)
       }
       else if (decompose != 0){
         starts[[k]] <- getTVC.initial(dat = dat[dat[, grp_var] == k, ], t_var = t_var, y_var = y_var, curveFun = curveFun,
                                       records = records, growth_TIC = growth_TIC, TVC = TVC, decompose = decompose,
-                                      res_scale = res_scale[[k]], res_cor = res_cor[[k]])
+                                      res_scale = .safe_k(res_scale, k), res_cor = .safe_k(res_cor, k), intrinsic = intrinsic)
       }
     }
   }
@@ -84,8 +89,11 @@ getMGroup.initial <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, cur
   else if (sub_Model == "MGM"){
     for (k in 1:nClass){
       starts[[k]] <- getMULTI.initial(dat = dat[dat[, grp_var] == k, ], t_var = t_var, y_var = y_var,
-                                      curveFun = curveFun, records = records, res_scale = res_scale[[k]],
-                                      res_cor = res_cor[[k]])
+                                      curveFun = curveFun, records = records, res_scale = .safe_k(res_scale, k),
+                                      res_cor = .safe_k(res_cor, k), intrinsic = intrinsic)
+      starts[[k]] <- .stabilize_class_specific_mgm_starts(
+        starts[[k]], curveFun = curveFun, intrinsic = intrinsic
+      )
     }
   }
   # Case 4: MED model
@@ -93,7 +101,7 @@ getMGroup.initial <- function(dat, nClass, grp_var, sub_Model, t_var, y_var, cur
     for (k in 1:nClass){
       starts[[k]] <- getMED.initial(dat = dat[dat[, grp_var] == k, ], t_var = t_var, y_var = y_var, m_var = m_var,
                                     x_var = x_var, x_type = x_type, curveFun = curveFun, records = records,
-                                    res_scale = res_scale[[k]], res_cor = res_cor[[k]])
+                                    res_scale = .safe_k(res_scale, k), res_cor = .safe_k(res_cor, k))
     }
   }
   return(starts)

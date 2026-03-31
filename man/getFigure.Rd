@@ -51,22 +51,25 @@ include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}
 (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}).}
 
 \item{y_model}{A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
-By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.}
+By default, this is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.}
 
-\item{t_var}{A string representing the prefix of the column names corresponding to the time variable at each study
-wave.}
+\item{t_var}{A string specifying the prefix of the column names corresponding to the time variable at each study
+wave. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{t_var} should be a character vector where
+each element corresponds to the time variable prefix for each respective longitudinal process.}
 
-\item{records}{A numeric vector representing the indices of the study waves.}
+\item{records}{A numeric vector representing the indices of the study waves. For \code{sub_Model} being \code{"MGM"}
+or \code{"MED"}, \code{records} should be a list of numeric vectors, where each vector provides the indices of the
+observed study waves for each longitudinal process.}
 
 \item{m_var}{A string that specifies the prefix of the column names corresponding to the mediator variable at each time point.
-Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.}
+Default is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"MED"}.}
 
 \item{x_type}{A string indicating the type of predictor variable used in the model. Supported values are \code{"baseline"}
-and \code{"longitudinal"}. Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.}
+and \code{"longitudinal"}. Default is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"MED"}.}
 
 \item{x_var}{A string specifying the baseline predictor if \code{x_type = "baseline"}, or the prefix of the column names
 corresponding to the predictor variable at each study wave if \code{x_type = "longitudinal"}. Default is \code{NULL} as this
-argument only requires when \code{sub_Model} is \code{"MED"}.}
+argument is only required when \code{sub_Model} is \code{"MED"}.}
 
 \item{xstarts}{A numeric value to indicate the starting time of the longitudinal process.}
 
@@ -82,9 +85,9 @@ individual figures can be visualized using the \code{show()} function.
 }
 \description{
 This function generates visualizations for the output of a fitted model. When a Latent Growth Curve Model
-(LGCM) is fitted for the longitudinal process, it provides (class-specific) estimated growth status with 95% confidence
+(LGCM) is fitted for the longitudinal process, it provides (class-specific) estimated growth status with 95\% confidence
 intervals. When a Latent Change Score Model (LCSM) is fitted for the longitudinal process, it provides (class-specific)
-estimated growth rate with 95% confidence intervals and change from baseline with 95% confidence intervals. These
+estimated growth rate with 95\% confidence intervals and change from baseline with 95\% confidence intervals. These
 visualizations are particularly useful for understanding the results and trajectories of different classes or groups
 within the model.
 }
@@ -110,7 +113,7 @@ xstarts <- mean(baseT)
 # Plot single group LGCM model
 set.seed(20191029)
 BLS_LGCM1 <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS",
-                     intrinsic = FALSE, records = 1:9, res_scale = 0.1)
+                     intrinsic = FALSE, records = 1:9)
 Figure1 <- getFigure(
   model = BLS_LGCM1@mxOutput, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
@@ -122,7 +125,7 @@ show(Figure1)
 BLS_LGCM2 <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM",
   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9,
-  curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
+  curveFun = "BLS", intrinsic = FALSE
 )
 Figure2 <- getFigure(
   model = BLS_LGCM2@mxOutput, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
@@ -133,4 +136,8 @@ Figure2 <- getFigure(
 show(Figure2)
 }
 
+}
+\seealso{
+\code{\link{getLGCM}}, \code{\link{getLCSM}}, \code{\link{getTVCmodel}}, \code{\link{getMGM}},
+\code{\link{getMediation}}, \code{\link{getMGroup}}, \code{\link{getMIX}}
 }

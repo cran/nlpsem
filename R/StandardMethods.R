@@ -1,5 +1,3 @@
-#' @title Standard Methods (S4) for the package
-#'
 # Define S4 Class
 ## S4 Class for the output structure for estimate functions, which include a slot for MxModel object
 ## and a slot for data frame of estimates when applicable.
@@ -36,7 +34,7 @@ setClass("FSOutput",
 ## kappa value, confidence interval, and judgment.
 #' @title S4 Class for kappa statistic with confidence interval and judgment.
 #' @description S4 Class for the output structure for the \code{getLatentKappa()} function.
-#' @slot kappa_value A character vector for the kappa statistic with $95\%$ CI.
+#' @slot kappa_value A character vector for the kappa statistic with 95\% CI.
 #' @slot judgment A character vector for the judgement for agreement.
 #' @export
 setClass("KappaOutput",
@@ -70,6 +68,29 @@ setClass("figOutput", slots = list(figures = "list"))
 #' @title S4 Generic for summarizing an optimized MxModel.
 #' @description Generic function for printing model summary of MxModel object.
 #' @param object An object of the appropriate class.
+#' @return Invisibly returns the summary of the MxModel object. Called primarily for its
+#' side effect of printing the model summary.
+#' @examples
+#' \donttest{
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' data("RMS_dat")
+#' RMS_dat0 <- RMS_dat
+#' baseT <- RMS_dat0$T1
+#' RMS_dat0$T1 <- RMS_dat0$T1 - baseT
+#' RMS_dat0$T2 <- RMS_dat0$T2 - baseT
+#' RMS_dat0$T3 <- RMS_dat0$T3 - baseT
+#' RMS_dat0$T4 <- RMS_dat0$T4 - baseT
+#' RMS_dat0$T5 <- RMS_dat0$T5 - baseT
+#' RMS_dat0$T6 <- RMS_dat0$T6 - baseT
+#' RMS_dat0$T7 <- RMS_dat0$T7 - baseT
+#' RMS_dat0$T8 <- RMS_dat0$T8 - baseT
+#' RMS_dat0$T9 <- RMS_dat0$T9 - baseT
+#' BLS_LGCM <- getLGCM(
+#'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
+#'   records = 1:9
+#' )
+#' ModelSummary(BLS_LGCM)
+#' }
 #' @export
 setGeneric("ModelSummary", function(object) {
   standardGeneric("ModelSummary")
@@ -77,8 +98,31 @@ setGeneric("ModelSummary", function(object) {
 #'
 ## Define Generic for printing output that are tables
 #' @title S4 Generic for displaying output in a table format.
-#' @description Generic function for printing output that are tables.
+#' @description Generic function for printing output as tables.
 #' @param object An object of the appropriate class.
+#' @return Called primarily for its side effect of printing formatted output. Returns
+#' the object invisibly.
+#' @examples
+#' \donttest{
+#' mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+#' data("RMS_dat")
+#' RMS_dat0 <- RMS_dat
+#' baseT <- RMS_dat0$T1
+#' RMS_dat0$T1 <- RMS_dat0$T1 - baseT
+#' RMS_dat0$T2 <- RMS_dat0$T2 - baseT
+#' RMS_dat0$T3 <- RMS_dat0$T3 - baseT
+#' RMS_dat0$T4 <- RMS_dat0$T4 - baseT
+#' RMS_dat0$T5 <- RMS_dat0$T5 - baseT
+#' RMS_dat0$T6 <- RMS_dat0$T6 - baseT
+#' RMS_dat0$T7 <- RMS_dat0$T7 - baseT
+#' RMS_dat0$T8 <- RMS_dat0$T8 - baseT
+#' RMS_dat0$T9 <- RMS_dat0$T9 - baseT
+#' BLS_LGCM <- getLGCM(
+#'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
+#'   records = 1:9, paramOut = TRUE
+#' )
+#' printTable(BLS_LGCM)
+#' }
 #' @export
 setGeneric("printTable", function(object){
   standardGeneric("printTable")
@@ -91,6 +135,8 @@ setGeneric("printTable", function(object){
 #' @title S4 Method for summarizing an optimized MxModel.
 #' @description Method for printing model summary of MxModel object.
 #' @param object An object of class "myMxOutput".
+#' @return Invisibly returns the summary of the MxModel object. Called primarily for its
+#' side effect of printing the model summary.
 #' @export
 setMethod("ModelSummary", "myMxOutput", function(object){
   ### Print the summary of MxModel
@@ -101,30 +147,34 @@ setMethod("ModelSummary", "myMxOutput", function(object){
 #' @title S4 Method for printing point estimates with standard errors
 #' @description Method for printing point estimates and standard errors.
 #' @param object An object of class "myMxOutput".
+#' @return Called for its side effect of printing point estimates and standard errors.
+#' Returns the object invisibly.
 #' @export
 setMethod("printTable", "myMxOutput", function(object) {
   # Print the Estimates if they exist
-  if (!is.null(object@Estimates)) {
+  if (nrow(object@Estimates) > 0) {
     cat("\nPoint Estimates and Standard Errors:\n")
     print(object@Estimates)
   }
-  else if (is.null(object@Estimates)) {
-    cat("\nTo obtain Estimates, please set 'paramOut = T' and specify parameters via 'names' argument!\n")
+  else {
+    message("To obtain Estimates, please set 'paramOut = TRUE' and specify parameters via 'names' argument!")
   }
 })
 ## Define Method for printing p values and confidence intervals (when applicable)
 #' @title S4 Method for printing p values and confidence intervals (when applicable)
 #' @description Method for printing p values and confidence intervals.
 #' @param object An object of class "StatsOutput".
+#' @return Called for its side effect of printing p values and confidence intervals.
+#' Returns the object invisibly.
 #' @export
 setMethod("printTable", "StatsOutput", function(object) {
   cat("Wald Estimates:\n")
   print(object@wald)
-  if (!is.null(object@likelihood)) {
+  if (nrow(object@likelihood) > 0) {
     cat("\nLikelihood Estimates:\n")
     print(object@likelihood)
   }
-  if (!is.null(object@bootstrap)) {
+  if (nrow(object@bootstrap) > 0) {
     cat("\nBootstrap Estimates:\n")
     print(object@bootstrap)
   }
@@ -133,6 +183,8 @@ setMethod("printTable", "StatsOutput", function(object) {
 #' @title S4 Method for printing estimated factor scores and their standard errors
 #' @description Method for printing estimated factor scores and their standard errors.
 #' @param object An object of class "FSOutput".
+#' @return Called for its side effect of printing factor scores and their standard errors.
+#' Returns the object invisibly.
 #' @export
 setMethod("printTable", "FSOutput", function(object) {
   cat("\nEstimated factor scores:\n")
@@ -141,9 +193,11 @@ setMethod("printTable", "FSOutput", function(object) {
   print(object@scores_se)
 })
 ## Define Method for printing kappa statistic with 95% CI and judgement for agreement.
-#' @title S4 Method for printing kappa statistic with $95\%$ CI and judgement for agreement.
-#' @description Method for printing kappa statistic with $95\%$ CI and judgement for agreement.
+#' @title S4 Method for printing kappa statistic with 95\% CI and judgement for agreement.
+#' @description Method for printing kappa statistic with 95\% CI and judgement for agreement.
 #' @param object An object of class "KappaOutput".
+#' @return Called for its side effect of printing kappa statistic with confidence interval
+#' and agreement judgment. Returns the object invisibly.
 #' @export
 setMethod("printTable", "KappaOutput", function(object) {
   cat("\nKappa statistic (95% CI):\n")
@@ -155,6 +209,8 @@ setMethod("printTable", "KappaOutput", function(object) {
 #' @title S4 Method for printing posterior probabilities, membership, entropy, and accuracy.
 #' @description Method for printing posterior probabilities, membership, entropy, and accuracy.
 #' @param object An object of class "postOutput".
+#' @return Called for its side effect of printing posterior probabilities, membership,
+#' entropy, and accuracy. Returns the object invisibly.
 #' @export
 setMethod("printTable", "postOutput", function(object) {
   cat("Posterior probabilities:\n")
@@ -163,8 +219,8 @@ setMethod("printTable", "postOutput", function(object) {
   print(object@membership)
   cat("\nEntropy:\n")
   print(object@entropy)
-  if (!is.null(object@accuracy)) {
-    cat("\nAccuracys:\n")
+  if (length(object@accuracy) > 0) {
+    cat("\nAccuracy:\n")
     print(object@accuracy)
   }
 })
@@ -172,37 +228,23 @@ setMethod("printTable", "postOutput", function(object) {
 #' @title S4 Method for displaying figures.
 #' @description Method to display a summary of the figOutput object when printed.
 #' @param object An object of class "figOutput".
+#' @return Called for its side effect of displaying figures. Returns the object invisibly.
 #' @export
-#' @importFrom methods show
+#' @importFrom methods show setClass setGeneric setMethod
 setMethod("show", "figOutput", function(object) {
   cat("figOutput Object\n")
   cat("--------------------\n")
   cat("Trajectories:", length(object@figures), "\n")
-  # Check the length of object@figures
-  if (length(object@figures) == 1) {
-    # Check the length of the first element of object@figures
-    if (length(object@figures[[1]]) == 1) {
-      cat("Figure 1:\n")
-      print(object@figures[[1]][[1]])
-    } else { # Assuming length is 2
-      cat("Figure 1:\n")
-      print(object@figures[[1]][[1]])
-      cat("Figure 2:\n")
-      print(object@figures[[1]][[2]])
-    }
-  } else { # If length of object@figures is not 1
-    for (j in seq_along(object@figures)) {
+  for (j in seq_along(object@figures)) {
+    if (length(object@figures) > 1) {
       cat("\nTrajectory", j, ":\n")
-      # Check the length of the j-th element of object@figures
-      if (length(object@figures[[j]]) == 1) {
-        cat("  Figure 1:\n")
-        print(object@figures[[j]][[1]])
-      } else { # Assuming length is 2
-        cat("  Figure 1:\n")
-        print(object@figures[[j]][[1]])
-        cat("  Figure 2:\n")
-        print(object@figures[[j]][[2]])
-      }
+      prefix <- "  "
+    } else {
+      prefix <- ""
+    }
+    for (k in seq_along(object@figures[[j]])) {
+      cat(prefix, "Figure ", k, ":\n", sep = "")
+      print(object@figures[[j]][[k]])
     }
   }
 })

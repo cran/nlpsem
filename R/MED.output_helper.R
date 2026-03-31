@@ -20,6 +20,7 @@
 #' @return A data frame containing the point estimates and standard errors for parameters of a longitudinal mediation model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxEval mxSE
 #'
@@ -69,8 +70,8 @@ getMED.output <- function(model, y_var, m_var, x_type, x_var, curveFun, names){
                           c(mxSE(beta_my, model))[c(1:3, 5:6, 9)],
                           mxSE(M_mean, model), mxSE(Y_mean, model),
                           mxSE(mediator, model), mxSE(total, model),
-                          model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, "_residuals")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, "_residuals")],
+                          model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, "_residuals")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, m_var, "_RES")]), 4)
     }
   }
@@ -95,8 +96,8 @@ getMED.output <- function(model, y_var, m_var, x_type, x_var, curveFun, names){
                           c(mxSE(beta_my, model))[c(1, 2, 4)], mxSE(M_mean, model), mxSE(Y_mean, model),
                           mxSE(mediator, model), mxSE(total, model)[c(1, 2, 4)],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(x_var, "_residuals")],
-                          model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, "_residuals")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, "_residuals")],
+                          model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, "_residuals")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, x_var, "_RES")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, x_var, "_RES")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, m_var, "_RES")]), 4)
@@ -121,11 +122,21 @@ getMED.output <- function(model, y_var, m_var, x_type, x_var, curveFun, names){
                           c(mxSE(beta_my, model))[c(1:3, 5:6, 9)], mxSE(M_mean, model), mxSE(Y_mean, model),
                           mxSE(mediator, model), mxSE(total, model)[c(1:3, 5:6, 9)],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(x_var, "_residuals")],
-                          model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, "_residuals")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, "_residuals")],
+                          model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, "_residuals")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(m_var, x_var, "_RES")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, x_var, "_RES")],
                           model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0(y_var, m_var, "_RES")]), 4)
+    }
+  }
+  # Safety net: ensure names and estimates have matching length
+  if (length(names) != length(model.est)){
+    warning("Number of parameter names (", length(names), ") does not match number of estimates (",
+            length(model.est), "). Auto-padding with generic labels.")
+    if (length(names) < length(model.est)){
+      names <- c(names, paste0("param_", seq(length(names) + 1, length(model.est))))
+    } else {
+      names <- names[seq_len(length(model.est))]
     }
   }
   estimate_out <- data.frame(Name = names, Estimate = model.est, SE = model.se)

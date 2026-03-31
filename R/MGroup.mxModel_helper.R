@@ -54,6 +54,7 @@
 #' @return A pre-optimized mxModel for a longitudinal mixture model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxFitFunctionAlgebra
 #'

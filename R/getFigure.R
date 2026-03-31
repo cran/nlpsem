@@ -1,9 +1,9 @@
 #' @title Generate Visualization for Fitted Model
 #'
 #' @description This function generates visualizations for the output of a fitted model. When a Latent Growth Curve Model
-#' (LGCM) is fitted for the longitudinal process, it provides (class-specific) estimated growth status with 95% confidence
+#' (LGCM) is fitted for the longitudinal process, it provides (class-specific) estimated growth status with 95\% confidence
 #' intervals. When a Latent Change Score Model (LCSM) is fitted for the longitudinal process, it provides (class-specific)
-#' estimated growth rate with 95% confidence intervals and change from baseline with 95% confidence intervals. These
+#' estimated growth rate with 95\% confidence intervals and change from baseline with 95\% confidence intervals. These
 #' visualizations are particularly useful for understanding the results and trajectories of different classes or groups
 #' within the model.
 #'
@@ -27,17 +27,20 @@
 #' "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
 #' (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param y_model A string that specifies how to fit longitudinal outcomes. Supported values are \code{"LGCM"} and \code{"LCSM"}.
-#' By default, this is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.
-#' @param t_var A string representing the prefix of the column names corresponding to the time variable at each study
-#' wave.
-#' @param records A numeric vector representing the indices of the study waves.
+#' By default, this is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"TVC"} or \code{"MGM"}.
+#' @param t_var A string specifying the prefix of the column names corresponding to the time variable at each study
+#' wave. For \code{sub_Model} being \code{"MGM"} or \code{"MED"}, \code{t_var} should be a character vector where
+#' each element corresponds to the time variable prefix for each respective longitudinal process.
+#' @param records A numeric vector representing the indices of the study waves. For \code{sub_Model} being \code{"MGM"}
+#' or \code{"MED"}, \code{records} should be a list of numeric vectors, where each vector provides the indices of the
+#' observed study waves for each longitudinal process.
 #' @param m_var A string that specifies the prefix of the column names corresponding to the mediator variable at each time point.
-#' Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.
+#' Default is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"MED"}.
 #' @param x_type A string indicating the type of predictor variable used in the model. Supported values are \code{"baseline"}
-#' and \code{"longitudinal"}. Default is \code{NULL} as this argument only requires when \code{sub_Model} is \code{"MED"}.
+#' and \code{"longitudinal"}. Default is \code{NULL} as this argument is only required when \code{sub_Model} is \code{"MED"}.
 #' @param x_var A string specifying the baseline predictor if \code{x_type = "baseline"}, or the prefix of the column names
 #' corresponding to the predictor variable at each study wave if \code{x_type = "longitudinal"}. Default is \code{NULL} as this
-#' argument only requires when \code{sub_Model} is \code{"MED"}.
+#' argument is only required when \code{sub_Model} is \code{"MED"}.
 #' @param xstarts A numeric value to indicate the starting time of the longitudinal process.
 #' @param xlab A string representing the time unit (e.g., "Week", "Month", or "Year") for the x-axis. Default is
 #' "Time".
@@ -46,6 +49,9 @@
 #' @return An object of class \code{figOutput} containing a slot named \code{figures}. This slot holds a ggplot object or a list
 #' of ggplot objects, each representing a figure for the fitted model. If the \code{figures} slot contains a list of ggplot objects,
 #' individual figures can be visualized using the \code{show()} function.
+#'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getLCSM}}, \code{\link{getTVCmodel}}, \code{\link{getMGM}},
+#' \code{\link{getMediation}}, \code{\link{getMGroup}}, \code{\link{getMIX}}
 #'
 #' @export
 #'
@@ -71,7 +77,7 @@
 #' # Plot single group LGCM model
 #' set.seed(20191029)
 #' BLS_LGCM1 <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS",
-#'                      intrinsic = FALSE, records = 1:9, res_scale = 0.1)
+#'                      intrinsic = FALSE, records = 1:9)
 #' Figure1 <- getFigure(
 #'   model = BLS_LGCM1@mxOutput, nClass = NULL, cluster_TIC = NULL, sub_Model = "LGCM",
 #'   y_var = "M", curveFun = "BLS", y_model = "LGCM", t_var = "T", records = 1:9,
@@ -83,7 +89,7 @@
 #' BLS_LGCM2 <-  getMIX(
 #'   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM",
 #'   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9,
-#'   curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3)
+#'   curveFun = "BLS", intrinsic = FALSE
 #' )
 #' Figure2 <- getFigure(
 #'   model = BLS_LGCM2@mxOutput, nClass = 2, cluster_TIC = NULL, sub_Model = "LGCM",
@@ -97,111 +103,55 @@
 getFigure <- function(model, nClass = NULL, cluster_TIC = NULL, grp_var = NULL, sub_Model, y_var,
                       curveFun, y_model = NULL, t_var, records, m_var = NULL, x_type = NULL, x_var = NULL,
                       xstarts, xlab = "Time", outcome = "Process"){
-  if (I(sub_Model == "MGM" & length(y_var) != length(outcome))){
+  if (sub_Model == "MGM" && length(y_var) != length(outcome)){
     stop("Please ensure provide a name for each longitudinal process!")
   }
   if (sub_Model == "MED"){
-    if (I(x_type == "baseline" & length(outcome) != 2)){
+    if (x_type == "baseline" && length(outcome) != 2){
       stop("Please ensure provide a name for both longitudinal mediator and longitudinal outcome!")
     }
-    else if (I(x_type == "longitudinal" & length(outcome) != 3)){
+    else if (x_type == "longitudinal" && length(outcome) != 3){
       stop("Please ensure provide a name for longitudinal predictor, longitudinal mediator and longitudinal outcome!")
     }
   }
-  if (is.null(nClass)){
-    if (sub_Model %in% c("LGCM", "LCSM")){
-      figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                           sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var,
-                           curveFun = curveFun, y_model = sub_Model, xstarts = xstarts, xlab = xlab,
-                           outcome = outcome)
-      output <- list(figures)
-    }
-    else if (sub_Model == "TVC"){
-      figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                           sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var,
-                           curveFun = curveFun, y_model = y_model, xstarts = xstarts, xlab = xlab,
-                           outcome = outcome)
-      output <- list(figures)
-    }
-    else if (sub_Model == "MGM"){
-      figures_L <- list()
-      for (traj in 1:length(y_var)){
-        figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC,
-                                       grp_var = grp_var, sub_Model = sub_Model, t_var = t_var[traj],
-                                       records = records[[traj]], y_var = y_var[traj], curveFun = curveFun,
-                                       y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome)
-      }
-      output <- figures_L
-    }
-    else if (sub_Model == "MED"){
-      figures_L <- list()
-      if (x_type == "baseline"){
-        traj_var <- c(y_var, m_var)
-        for (traj in 1:length(y_var)){
-          figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC,
-                                         grp_var = grp_var, sub_Model = sub_Model, t_var = t_var[traj],
-                                         records = records[[traj]], y_var = traj_var[traj], curveFun = curveFun,
-                                         y_model = "LGCM", xstarts = xstarts, xlab = xlab, outcome = outcome)
-        }
-      }
-      else if (x_type == "longitudinal"){
-        traj_var <- c(y_var, m_var, x_var)
-        for (traj in 1:length(y_var)){
-          figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC,
-                                         grp_var = grp_var, sub_Model = sub_Model, t_var = t_var[traj],
-                                         records = records[[traj]], y_var = traj_var[traj], curveFun = curveFun,
-                                         y_model = "LGCM", xstarts = xstarts, xlab = xlab, outcome = outcome)
-        }
-      }
-      output <- figures_L
-    }
+  if (sub_Model %in% c("LGCM", "LCSM")){
+    figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
+                         sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var,
+                         curveFun = curveFun, y_model = sub_Model, xstarts = xstarts, xlab = xlab,
+                         outcome = outcome)
+    output <- list(figures)
   }
-  else if (!is.null(nClass)){
-    if (sub_Model %in% c("LGCM", "LCSM")){
-      figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                           sub_Model = sub_Model, t_var = t_var, records = records,
-                           y_var = y_var, curveFun = curveFun, y_model = sub_Model, xstarts = xstarts,
-                           xlab = xlab, outcome = outcome)
-      output <- list(figures)
+  else if (sub_Model == "TVC"){
+    figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
+                         sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var,
+                         curveFun = curveFun, y_model = y_model, xstarts = xstarts, xlab = xlab,
+                         outcome = outcome)
+    output <- list(figures)
+  }
+  else if (sub_Model == "MGM"){
+    figures_L <- list()
+    for (traj in seq_along(y_var)){
+      figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC,
+                                     grp_var = grp_var, sub_Model = sub_Model, t_var = t_var[traj],
+                                     records = records[[traj]], y_var = y_var[traj], curveFun = curveFun,
+                                     y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome[traj])
     }
-    else if (sub_Model == "TVC"){
-      figures <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                           sub_Model = sub_Model, t_var = t_var, records = records, y_var = y_var, curveFun = curveFun,
-                           y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome)
-      output <- list(figures)
+    output <- figures_L
+  }
+  else if (sub_Model == "MED"){
+    figures_L <- list()
+    if (x_type == "baseline"){
+      traj_var <- c(y_var, m_var)
+    } else {
+      traj_var <- c(y_var, m_var, x_var)
     }
-    else if (sub_Model == "MGM"){
-      figures_L <- list()
-      for (traj in 1:length(y_var)){
-        figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                                       sub_Model = sub_Model, t_var = t_var[traj],
-                                       records = records[[traj]], y_var = y_var[traj], curveFun = curveFun,
-                                       y_model = y_model, xstarts = xstarts, xlab = xlab, outcome = outcome)
-      }
-      output <- figures_L
+    for (traj in seq_along(traj_var)){
+      figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC,
+                                     grp_var = grp_var, sub_Model = sub_Model, t_var = t_var[traj],
+                                     records = records[[traj]], y_var = traj_var[traj], curveFun = curveFun,
+                                     y_model = "LGCM", xstarts = xstarts, xlab = xlab, outcome = outcome[traj])
     }
-    else if (sub_Model == "MED"){
-      figures_L <- list()
-      if (x_type == "baseline"){
-        traj_var <- c(y_var, m_var)
-        for (traj in 1:length(y_var)){
-          figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                                         sub_Model = sub_Model, t_var = t_var[traj], records = records[[traj]],
-                                         y_var = traj_var[traj], curveFun = curveFun, y_model = "LGCM", xstarts = xstarts,
-                                         xlab = xlab, outcome = outcome)
-        }
-      }
-      else if (x_type == "longitudinal"){
-        traj_var <- c(y_var, m_var, x_var)
-        for (traj in 1:length(y_var)){
-          figures_L[[traj]] <- getFitFig(model = model, nClass = nClass, cluster_TIC = cluster_TIC, grp_var = grp_var,
-                                         sub_Model = sub_Model, t_var = t_var[traj], records = records[[traj]],
-                                         y_var = traj_var[traj], curveFun = curveFun, y_model = "LGCM", xstarts = xstarts,
-                                         xlab = xlab, outcome = outcome)
-        }
-      }
-      output <- figures_L
-    }
+    output <- figures_L
   }
   figOut <- new("figOutput", figures = output)
   return(figOut)

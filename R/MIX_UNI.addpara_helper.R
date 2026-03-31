@@ -34,6 +34,7 @@
 #' specific changes, and values of change-from-baseline for latent change score models.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxMatrix mxAlgebra mxAlgebraFromString diag2vec
 #'
@@ -64,10 +65,10 @@ getMIX_UNI.addpara <- function(dat, nClass, curveFun, intrinsic, t_var, records,
     m_Omega <- mxMatrix(type = "Full", nrow = length(m_time), ncol = length(m_lag),
                         values = m_Omega_val, free = FALSE, name = "Omega")
     if (curveFun %in% c("nonparametric", "NonP")){
-      rate_loads <- mxMatrix("Full", nrow = length(m_lag), ncol = 1, c(F, rep(T, length(m_lag) - 1)),
-                             values = c(1, starts[[k]][[1]][[4]][-1]),
-                             labels = paste0("c", k, "Y_rel_rate", 1:length(m_lag)),
-                             byrow = T, name = paste0("c", k, "r_loads"))
+      rate_loads <- mxMatrix("Full", nrow = length(m_lag), ncol = 1, c(FALSE, rep(TRUE, length(m_lag) - 1)),
+                             values = c(1, starts[[k]]$Y_starts$rel_rate[-1]),
+                             labels = paste0("c", k, "Y_rel_rate", seq_along(m_lag)),
+                             byrow = TRUE, name = paste0("c", k, "r_loads"))
       status_loads <- mxAlgebraFromString(paste0("Omega %*% c", k, "r_loads"),
                                           name = paste0("c", k, "s_loads"))
       slp_m <- mxAlgebraFromString(paste0("c", k, "r_loads %*% c", k, "Y_mean0[2, ]"),

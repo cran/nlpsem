@@ -47,8 +47,9 @@
 #' from \code{getMIX()}.
 #' @param growth_TIC A string or character vector of column names of time-invariant covariate(s) accounting for the variability
 #' of growth factors if any. It takes the value passed from \code{getMIX()}.
-#' @param res_scale A list where each element is a (vector of) numeric scaling factor(s) for residual variance to calculate the
-#' corresponding initial value for a latent class, between \code{0} and \code{1} exclusive. It takes the value passed from \code{getMIX()}.
+#' @param res_scale An optional list where each element is a (vector of) numeric scaling factor(s) for residual variance to
+#' calculate the corresponding initial value for a latent class, between \code{0} and \code{1} exclusive, or \code{NULL} (default)
+#' to use data-driven estimation with a heuristic of \code{0.1} as fallback. It takes the value passed from \code{getMIX()}.
 #' @param res_cor A list where each element is a (vector of) numeric initial value(s) for residual correlation in each class. It
 #' needs to be specified if the sub_Model is \code{"TVC"} (when \code{decompose != 0}), \code{"MGM"}, or \code{"MED"}. It takes the value
 #' passed from \code{getMIX()}.
@@ -57,13 +58,16 @@
 #' A list containing initial values for each class in the specified model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom stats var cov lm na.exclude kmeans
 #'
 getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_var, records, y_var, curveFun,
-                           m_var, x_var, x_type, TVC, decompose, growth_TIC, res_scale, res_cor){
+                           m_var, x_var, x_type, TVC, decompose, growth_TIC, res_scale, res_cor, intrinsic = NULL){
   # Initialize an empty list for starts
   starts <- list()
+  # Helper to safely extract list element (returns NULL when the list is NULL)
+  .safe_k <- function(x, k) if (is.null(x)) NULL else x[[k]]
   # Create an ID variable based on the number of rows in dat
   ID <- 1:nrow(dat)
   # Case 1: LGCMs or LCSMs
@@ -82,7 +86,13 @@ getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_v
     dat$label <- match(out_Kmeans$cluster, order_indices)
     for (k in 1:nClass){
       starts[[k]] <- getUNI.initial(dat = dat[dat$label == k, ], t_var = t_var, y_var = y_var, curveFun = curveFun,
-                                    records = records, growth_TIC = growth_TIC, res_scale = res_scale[[k]])
+                                    records = records, growth_TIC = growth_TIC, res_scale = .safe_k(res_scale, k),
+                                    intrinsic = intrinsic)
+      # For mixture models, inflate data-driven residual to help class separation during optimization.
+      # The data-driven estimate is accurate but can be too tight for mixture model convergence.
+      if (is.null(.safe_k(res_scale, k))){
+        starts[[k]]$Y_starts$residuals <- starts[[k]]$Y_starts$residuals * 2
+      }
     }
   }
   # Case 2: TVC model
@@ -94,26 +104,32 @@ getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_v
     nT <- length(records)
     growth_factor <- getUNI.GF(dat_traj = dat_traj, dat_time = dat_time, nT = nT, curveFun = curveFun)
     out_Kmeans <- kmeans(x = growth_factor, centers = nClass, iter.max = 100)
-    order_indices <- order(out_Kmeans$centers[, 1])
     order_indices <- order(apply(out_Kmeans$centers, 1, mean))
     dat$label <- match(out_Kmeans$cluster, order_indices)
     for (k in 1:nClass){
       if (decompose == 0){
         starts[[k]] <- getTVC.initial(dat = dat[dat$label == k, ], t_var = t_var, y_var = y_var, curveFun = curveFun,
                                       records = records, growth_TIC = growth_TIC, TVC = TVC, decompose = decompose,
-                                      res_scale = res_scale[[k]])
+                                      res_scale = .safe_k(res_scale, k), intrinsic = intrinsic)
       }
       else if (decompose != 0){
         starts[[k]] <- getTVC.initial(dat = dat[dat$label == k, ], t_var = t_var, y_var = y_var, curveFun = curveFun,
                                       records = records, growth_TIC = growth_TIC, TVC = TVC, decompose = decompose,
-                                      res_scale = res_scale[[k]], res_cor = res_cor[[k]])
+                                      res_scale = .safe_k(res_scale, k), res_cor = .safe_k(res_cor, k), intrinsic = intrinsic)
+      }
+      # For mixture models, inflate data-driven residual to help class separation during optimization
+      if (is.null(.safe_k(res_scale, k))){
+        starts[[k]]$Y_starts$residuals <- starts[[k]]$Y_starts$residuals * 2
+        if (decompose != 0 && !is.null(starts[[k]]$TVC_starts$residuals)){
+          starts[[k]]$TVC_starts$residuals <- starts[[k]]$TVC_starts$residuals * 2
+        }
       }
     }
   }
   # Case 3: MGM model
   else if (sub_Model == "MGM"){
     uni_GF <- list()
-    for (traj in 1:length(y_var)){
+    for (traj in seq_along(y_var)){
       nT <- length(records[[traj]])
       dat_traj <- dat[, paste0(y_var[traj], records[[traj]])]
       dat_time <- dat[, paste0(t_var[traj], records[[traj]])]
@@ -125,9 +141,14 @@ getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_v
     order_indices <- order(apply(out_Kmeans$centers, 1, mean))
     dat$label <- match(out_Kmeans$cluster, order_indices)
     for (k in 1:nClass){
-      starts[[k]] <- getMULTI.initial(dat = dat[dat$label == k, ], t_var = t_var, y_var = y_var,
-                                      curveFun = curveFun, records = records, res_scale = res_scale[[k]],
-                                      res_cor = res_cor[[k]])
+      class_dat <- dat[dat$label == k, ]
+      starts[[k]] <- getMULTI.initial(dat = class_dat, t_var = t_var, y_var = y_var,
+                                      curveFun = curveFun, records = records, res_scale = .safe_k(res_scale, k),
+                                      res_cor = .safe_k(res_cor, k), intrinsic = intrinsic)
+      # For mixture models, inflate data-driven residual to help class separation during optimization
+      if (is.null(.safe_k(res_scale, k))){
+        starts[[k]]$residuals <- starts[[k]]$residuals * 2
+      }
     }
   }
   # Case 4: MED model
@@ -139,7 +160,7 @@ getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_v
       traj_var <- c(y_var, m_var, x_var)
     }
     uni_GF <- list()
-    for (traj in 1:length(traj_var)){
+    for (traj in seq_along(traj_var)){
       nT <- length(records[[traj]])
       dat_traj <- dat[, paste0(traj_var[traj], records[[traj]])]
       dat_time <- dat[, paste0(t_var[traj], records[[traj]])]
@@ -153,21 +174,25 @@ getMIX.initial <- function(dat, nClass, prop_starts, sub_Model, cluster_TIC, t_v
     for (k in 1:nClass){
       starts[[k]] <- getMED.initial(dat = dat[dat$label == k, ], t_var = t_var, y_var = y_var, m_var = m_var,
                                     x_var = x_var, x_type = x_type, curveFun = curveFun, records = records,
-                                    res_scale = res_scale[[k]], res_cor = res_cor[[k]])
+                                    res_scale = .safe_k(res_scale, k), res_cor = .safe_k(res_cor, k))
+      # For mixture models, inflate data-driven residuals to help class separation during optimization
+      if (is.null(.safe_k(res_scale, k))){
+        for (traj_name in names(starts[[k]])){
+          if (!is.null(starts[[k]][[traj_name]]$residuals)){
+            starts[[k]][[traj_name]]$residuals <- starts[[k]][[traj_name]]$residuals * 2
+          }
+        }
+      }
     }
   }
   # Check if cluster_TIC is not null
   if (!is.null(cluster_TIC)){
-    dat_nnet <- dat[dat$label != 0, c("label", cluster_TIC)]
-    mod_nnet <- nnet::multinom(label ~ ., data = dat_nnet)
-    logit_starts <- (as.matrix(rbind(rep(0, length(cluster_TIC) + 1), summary(mod_nnet)$coefficient)))
-    rownames(logit_starts) <- colnames(logit_starts) <- NULL
-    starts[[length(starts) + 1]] <- logit_starts
+    starts[[length(starts) + 1]] <- .cluster_tic_weight_starts(dat, cluster_TIC, nClass)
   }
   # If cluster_TIC is null
   else if (is.null(cluster_TIC)){
     # Return the starts list
-    starts[[length(starts) + 1]] <- prop_starts/prop_starts[1]
+    starts[[length(starts) + 1]] <- .mixture_weight_starts(prop_starts)
   }
   return(starts)
 }

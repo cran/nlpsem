@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{An object of class "FSOutput".}
 }
+\value{
+Called for its side effect of printing factor scores and their standard errors.
+Returns the object invisibly.
+}
 \description{
 Method for printing estimated factor scores and their standard errors.
 }

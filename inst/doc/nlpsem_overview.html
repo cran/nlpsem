@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Introduction to nlpsem</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Introduction to nlpsem</h1>
+
+
+
+<div id="overview" class="section level2">
+<h2>Overview</h2>
+<p>The <strong>nlpsem</strong> package provides computational tools for
+fitting linear and nonlinear longitudinal models within the structural
+equation modeling (SEM) framework. It is built on top of the
+<strong>OpenMx</strong> package and is designed to handle intrinsically
+nonlinear growth functions that cannot be expressed as simple
+reparameterizations of linear models.</p>
+<p>The methods implemented in this package are described in Liu (2025)
+<a href="https://doi.org/10.3758/s13428-025-02596-4">doi:10.3758/s13428-025-02596-4</a>.</p>
+</div>
+<div id="modeling-scenarios" class="section level2">
+<h2>Modeling Scenarios</h2>
+<p>The package supports four modeling scenarios:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Univariate longitudinal processes</strong> – Models for a
+single longitudinal outcome with growth factors, optionally including
+time-invariant covariates (TICs) and time-varying covariates (TVCs). Key
+functions: <code>getLGCM()</code>, <code>getLCSM()</code>,
+<code>getTVCmodel()</code>.</p></li>
+<li><p><strong>Multivariate longitudinal processes</strong> – Models
+that assess the correlation or causation between multiple longitudinal
+variables. Key functions: <code>getMGM()</code>,
+<code>getMediation()</code>.</p></li>
+<li><p><strong>Multiple-group models</strong> – Extensions of scenarios
+1 and 2 that evaluate differences among manifested groups. Key function:
+<code>getMGroup()</code>.</p></li>
+<li><p><strong>Longitudinal mixture models</strong> – Extensions of
+scenarios 1 and 2 that assume trajectories arise from multiple latent
+classes. Key function: <code>getMIX()</code>.</p></li>
+</ol>
+</div>
+<div id="supported-growth-curve-functions" class="section level2">
+<h2>Supported Growth Curve Functions</h2>
+<p>The following functional forms are available for specifying the shape
+of longitudinal trajectories:</p>
+<table>
+<colgroup>
+<col width="28%" />
+<col width="18%" />
+<col width="26%" />
+<col width="26%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Curve Function</th>
+<th align="left">Abbreviation</th>
+<th align="center">Available in LGCM</th>
+<th align="center">Available in LCSM</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Linear</td>
+<td align="left"><code>&quot;LIN&quot;</code></td>
+<td align="center">Yes</td>
+<td align="center">–</td>
+</tr>
+<tr class="even">
+<td align="left">Quadratic</td>
+<td align="left"><code>&quot;QUAD&quot;</code></td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+</tr>
+<tr class="odd">
+<td align="left">Negative exponential</td>
+<td align="left"><code>&quot;EXP&quot;</code></td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+</tr>
+<tr class="even">
+<td align="left">Jenss-Bayley</td>
+<td align="left"><code>&quot;JB&quot;</code></td>
+<td align="center">Yes</td>
+<td align="center">Yes</td>
+</tr>
+<tr class="odd">
+<td align="left">Bilinear spline</td>
+<td align="left"><code>&quot;BLS&quot;</code></td>
+<td align="center">Yes</td>
+<td align="center">–</td>
+</tr>
+<tr class="even">
+<td align="left">Nonparametric</td>
+<td align="left"><code>&quot;NonP&quot;</code></td>
+<td align="center">–</td>
+<td align="center">Yes</td>
+</tr>
+</tbody>
+</table>
+<p>The negative exponential, Jenss-Bayley, and bilinear spline models
+can be fitted as intrinsically nonlinear models (set
+<code>intrinsic = TRUE</code>), which allows certain parameters (e.g.,
+the knot in bilinear spline models) to vary across individuals.</p>
+</div>
+<div id="quick-start-example" class="section level2">
+<h2>Quick-Start Example</h2>
+<p>The package ships with the <code>RMS_dat</code> dataset, a processed
+sample from the ECLS-K:2011 study containing reading, mathematics, and
+science scores across nine study waves for 500 children.</p>
+<div id="data-preparation" class="section level3">
+<h3>Data Preparation</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(nlpsem)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">mxOption</span>(<span class="at">model =</span> <span class="cn">NULL</span>, <span class="at">key =</span> <span class="st">&quot;Default optimizer&quot;</span>, <span class="st">&quot;CSOLNP&quot;</span>, <span class="at">reset =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="co"># Load ECLS-K (2011) data</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">data</span>(<span class="st">&quot;RMS_dat&quot;</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>RMS_dat0 <span class="ot">&lt;-</span> RMS_dat</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># Re-baseline the data so that the estimated initial status corresponds to</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="co"># the starting point of the study</span></span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>baseT <span class="ot">&lt;-</span> RMS_dat0<span class="sc">$</span>T1</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>) {</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>  RMS_dat0[[<span class="fu">paste0</span>(<span class="st">&quot;T&quot;</span>, i)]] <span class="ot">&lt;-</span> RMS_dat0[[<span class="fu">paste0</span>(<span class="st">&quot;T&quot;</span>, i)]] <span class="sc">-</span> baseT</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>}</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>xstarts <span class="ot">&lt;-</span> <span class="fu">mean</span>(baseT)</span></code></pre></div>
+</div>
+<div id="fitting-a-latent-growth-curve-model" class="section level3">
+<h3>Fitting a Latent Growth Curve Model</h3>
+<p>Below we fit a bilinear spline LGCM with a fixed knot to the
+mathematics scores. Setting <code>intrinsic = FALSE</code> fixes the
+knot location across individuals, while <code>intrinsic = TRUE</code>
+would allow the knot to vary.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="co"># Fit bilinear spline LGCM (fixed knot)</span></span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>Math_BLS_fixed <span class="ot">&lt;-</span> <span class="fu">getLGCM</span>(</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">dat =</span> RMS_dat0, <span class="at">t_var =</span> <span class="st">&quot;T&quot;</span>, <span class="at">y_var =</span> <span class="st">&quot;M&quot;</span>, <span class="at">curveFun =</span> <span class="st">&quot;bilinear spline&quot;</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">intrinsic =</span> <span class="cn">FALSE</span>, <span class="at">records =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span></span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>)</span></code></pre></div>
+<p>To obtain parameter estimates and standard errors, set
+<code>paramOut = TRUE</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># Fit with parameter output</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a>Math_BLS_fixed <span class="ot">&lt;-</span> <span class="fu">getLGCM</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>  <span class="at">dat =</span> RMS_dat0, <span class="at">t_var =</span> <span class="st">&quot;T&quot;</span>, <span class="at">y_var =</span> <span class="st">&quot;M&quot;</span>, <span class="at">curveFun =</span> <span class="st">&quot;bilinear spline&quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>  <span class="at">intrinsic =</span> <span class="cn">FALSE</span>, <span class="at">records =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>  <span class="at">paramOut =</span> <span class="cn">TRUE</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a><span class="co"># View estimates</span></span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="fu">printTable</span>(Math_BLS_fixed)</span></code></pre></div>
+</div>
+</div>
+<div id="post-processing" class="section level2">
+<h2>Post-Processing</h2>
+<div id="model-fit-summary" class="section level3">
+<h3>Model Fit Summary</h3>
+<p>Use <code>getSummary()</code> to compare fit statistics (number of
+parameters, -2LL, AIC, BIC) across one or more models:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">getSummary</span>(<span class="at">model_list =</span> <span class="fu">list</span>(Math_BLS_fixed<span class="sc">@</span>mxOutput))</span></code></pre></div>
+</div>
+<div id="parameter-inference" class="section level3">
+<h3>Parameter Inference</h3>
+<p>Use <code>getEstimateStats()</code> to obtain p-values and confidence
+intervals for the estimated parameters:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">getEstimateStats</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">est_in =</span> Math_BLS_fixed<span class="sc">@</span>Estimates, <span class="at">CI_type =</span> <span class="st">&quot;Wald&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>)</span></code></pre></div>
+<p>The function supports Wald, likelihood-based, and bootstrap
+confidence intervals via the <code>CI_type</code> argument.</p>
+</div>
+<div id="visualization" class="section level3">
+<h3>Visualization</h3>
+<p>Use <code>getFigure()</code> to plot estimated growth trajectories
+with 95% confidence intervals:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>Figure <span class="ot">&lt;-</span> <span class="fu">getFigure</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>  <span class="at">model =</span> Math_BLS_fixed<span class="sc">@</span>mxOutput, <span class="at">nClass =</span> <span class="cn">NULL</span>, <span class="at">cluster_TIC =</span> <span class="cn">NULL</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">sub_Model =</span> <span class="st">&quot;LGCM&quot;</span>, <span class="at">y_var =</span> <span class="st">&quot;M&quot;</span>, <span class="at">curveFun =</span> <span class="st">&quot;BLS&quot;</span>, <span class="at">y_model =</span> <span class="st">&quot;LGCM&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">t_var =</span> <span class="st">&quot;T&quot;</span>, <span class="at">records =</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">9</span>, <span class="at">m_var =</span> <span class="cn">NULL</span>, <span class="at">x_var =</span> <span class="cn">NULL</span>, <span class="at">x_type =</span> <span class="cn">NULL</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">xstarts =</span> xstarts, <span class="at">xlab =</span> <span class="st">&quot;Month&quot;</span>, <span class="at">outcome =</span> <span class="st">&quot;Mathematics&quot;</span></span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>)</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a><span class="fu">show</span>(Figure)</span></code></pre></div>
+</div>
+<div id="other-useful-functions" class="section level3">
+<h3>Other Useful Functions</h3>
+<ul>
+<li><code>getLRT()</code>: Perform a likelihood ratio test to compare
+nested models (e.g., fixed vs. random knot).</li>
+<li><code>getIndFS()</code>: Obtain individual factor scores from a
+fitted model.</li>
+<li><code>getPosterior()</code>: Compute posterior class probabilities
+for mixture models.</li>
+<li><code>getLatentKappa()</code>: Calculate Cohen’s kappa for agreement
+between latent class assignments.</li>
+</ul>
+</div>
+</div>
+<div id="further-reading" class="section level2">
+<h2>Further Reading</h2>
+<p>For detailed examples of each modeling scenario, see the following
+vignettes:</p>
+<ul>
+<li><code>vignette(&quot;getLGCM_examples&quot;)</code> – Latent growth curve
+models</li>
+<li><code>vignette(&quot;getLCSM_examples&quot;)</code> – Latent change score
+models</li>
+<li><code>vignette(&quot;getTVCmodel_examples&quot;)</code> – Models with
+time-varying covariates</li>
+<li><code>vignette(&quot;getMGM_examples&quot;)</code> – Multivariate growth
+models</li>
+<li><code>vignette(&quot;getMediation_examples&quot;)</code> – Longitudinal
+mediation models</li>
+<li><code>vignette(&quot;getMGroup_examples&quot;)</code> – Multiple-group
+models</li>
+<li><code>vignette(&quot;getMIX_examples&quot;)</code> – Mixture models</li>
+</ul>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

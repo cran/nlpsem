@@ -22,15 +22,16 @@
 #' loadings of multivariate longitudinal outcomes.
 #'
 #' @keywords internal
+#' @noRd
 #'
 getMIX_MULTI.loadings <- function(nClass, y_model, t_var, y_var, curveFun, intrinsic = NULL, records){
   output_CL <- list()
   for (k in 1:nClass){
     outPoint_L <- outLag_L <- midTime_L <- outLoads_L <- list()
-    for (traj in 1:length(y_var)){
+    for (traj in seq_along(y_var)){
       outPoint <- list()
       for (j in records[[traj]]){
-        outPoint[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var[traj], j),
+        outPoint[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var[traj], j),
                                   name = paste0(y_var[traj], "t", j))
       }
       outPoint_L[[traj]] <- outPoint
@@ -107,11 +108,11 @@ getMIX_MULTI.loadings <- function(nClass, y_model, t_var, y_var, curveFun, intri
             for(j in records[[traj]]){
               outLoads1[[j]] <- mxAlgebraFromString(paste0(y_var[traj], "t", j, " - c", k, y_var[traj], "_mug"),
                                                     name = paste0("c", k, "L1", j, y_var[traj]))
-              outLoads2[[j]] <- mxAlgebraFromString(paste0("abs(", y_var[traj], "t", j, " - c", k, y_var[traj], "_mug)"),
+              outLoads2[[j]] <- mxAlgebraFromString(paste0("sqrt((", y_var[traj], "t", j, " - c", k, y_var[traj], "_mug)^2 + 1e-6)"),
                                                     name = paste0("c", k, "L2", j, y_var[traj]))
               outLoads3[[j]] <- mxAlgebraFromString(paste0("-c", k, y_var[traj], "_mueta2s * (", y_var[traj], "t", j, " - c", k, y_var[traj],
-                                                           "_mug)/abs(", y_var[traj], "t", j,
-                                                           " - c", k, y_var[traj], "_mug) - c", k, y_var[traj], "_mueta2s"),
+                                                           "_mug)/sqrt((", y_var[traj], "t", j, " - c", k, y_var[traj], "_mug)^2 + 1e-6) - c",
+                                                           k, y_var[traj], "_mueta1s"),
                                                     name = paste0("c", k, "L3", j, y_var[traj]))
             }
             outLoads_L[[traj]] <- list(outLoads1, outLoads2, outLoads3)

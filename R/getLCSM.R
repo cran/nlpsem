@@ -17,9 +17,9 @@
 #' variability of growth factors if any. Default is \code{NULL}, indicating no growth TICs are included in the model.
 #' @param starts A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified
 #' initial values.
-#' @param res_scale A numeric value representing the scaling factor for the initial calculation of the residual variance. This
-#' value should be between \code{0} and \code{1}, exclusive. By default, this is \code{NULL}, as it is unnecessary when the
-#' user specifies the initial values using the \code{starts} argument.
+#' @param res_scale An optional numeric value representing the scaling factor for the initial calculation of the residual
+#' variance. This value should be between \code{0} and \code{1}, exclusive. Default is \code{NULL}, in which case data-driven
+#' residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is applied as fallback.
 #' @param tries An integer specifying the number of additional optimization attempts. Default is \code{NULL}.
 #' @param OKStatus An integer (vector) specifying acceptable status codes for convergence. Default is \code{0}.
 #' @param jitterD A string specifying the distribution for jitter. Supported values are: \code{"runif"} (uniform
@@ -27,7 +27,8 @@
 #' @param loc A numeric value representing the location parameter of the jitter distribution. Default is \code{1}.
 #' @param scale A numeric value representing the scale parameter of the jitter distribution. Default is \code{0.25}.
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
-#' @param names A character vector specifying parameter names. Default is \code{NULL}.
+#' @param names A character vector specifying parameter names. Default is \code{NULL}, in which case
+#' meaningful names are automatically generated based on the model configuration.
 #'
 #' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
 #' \itemize{
@@ -40,7 +41,7 @@
 #' @references
 #' \itemize{
 #'   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
-#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
+#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods, 56(3), 1349-1375. \doi{10.3758/s13428-023-02097-2}}
 #'   \item {Liu, J. (2022). "Jenss–Bayley Latent Change Score Model With Individual Ratio of the Growth Acceleration in the Framework
 #'   of Individual Measurement Occasions." Journal of Educational and Behavioral Statistics, 47(5), 507–543.
 #'   \doi{10.3102/10769986221099919}}
@@ -48,6 +49,8 @@
 #'   Acceleration Frameworks: Examining Velocity and Acceleration of Growth Trajectories." Multivariate Behavioral Research, 48(1),
 #'   117-143. \doi{10.1080/00273171.2012.755111}}
 #' }
+#'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getTVCmodel}}, \code{\link{getFigure}}
 #'
 #' @export
 #'
@@ -76,7 +79,7 @@
 #' ## Fit model
 #' NonP_LCSM <- getLCSM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "nonparametric",
-#'   intrinsic = FALSE, records = 1:9, res_scale = 0.1
+#'   intrinsic = FALSE, records = 1:9
 #'   )
 #' }
 #'
@@ -86,34 +89,32 @@
 getLCSM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, growth_TIC = NULL, starts = NULL,
                     res_scale = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
                     paramOut = FALSE, names = NULL){
-  if (I(paramOut & is.null(names))){
-    stop("Please enter the original parameters if want to obtain them!")
-  }
-  if (I(res_scale <= 0 | res_scale >= 1)){
-    stop("Please enter a value between 0 and 1 (exclusive) for res_scale!")
-  }
-  if (I(intrinsic & curveFun %in% c("nonparametric", "NonP", "quadratic", "QUAD"))){
-    stop("An intrinsic nonlinear function should be negative exponential or Jenss-Bayley for a LCSM!")
-  }
+  dat <- as.data.frame(dat)
+  validate_paramOut(paramOut, names)
+  validate_res_scale(res_scale)
+  validate_curveFun(curveFun)
+  validate_intrinsic(intrinsic, curveFun, model_type = "LCSM")
+  validate_columns(dat, t_var = t_var, y_var = y_var, records = records,
+                   growth_TIC = growth_TIC)
   ## Derive initial values for the parameters of interest if not specified by users
   if (is.null(starts)){
     starts <- getUNI.initial(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, records = records,
-                             growth_TIC = growth_TIC, res_scale = res_scale)
+                             growth_TIC = growth_TIC, res_scale = res_scale, intrinsic = intrinsic)
   }
   ## Build up a latent change score model, with or without TICs
   model_mx <- getLCSM.mxModel(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, intrinsic = intrinsic,
                               records = records, growth_TIC = growth_TIC, starts = starts)
   ## Optimize the constructed latent change score model
   if (!is.null(tries)){
-    model0 <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
+    model <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
                         loc = loc, scale = scale)
-    model <- mxRun(model0)
   }
   else{
     model <- mxRun(model_mx)
   }
   ## Print out the point estimates and standard errors for the parameters of interest
   if(paramOut){
+    if (is.null(names)) names <- .auto_names_LCSM(curveFun, intrinsic, growth_TIC, length(records))
     LCSM_output <- getLCSM.output(model = model, curveFun = curveFun, growth_TIC = growth_TIC, names = names)
     model <- new("myMxOutput", mxOutput = model, Estimates = LCSM_output)
   }

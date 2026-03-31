@@ -25,13 +25,14 @@
 #' changes, and values of change-from-baseline for a mixture model with multivariate latent change score models as submodels.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxMatrix mxAlgebra mxAlgebraFromString diag2vec
 #'
 getMIX_MULTI.addpara <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic = NULL, starts){
   AddPara_CL <- AddPara_L <- list()
   for (k in 1:nClass){
-    for (traj in 1:length(y_var)){
+    for (traj in seq_along(y_var)){
       # Define mxMatrix to include the mean vector of each measurement occasion and the mean vector of
       # each middle time point, which are useful to derive the means and variances of interval-specific
       # slopes, interval-specific changes and change from baseline.
@@ -57,10 +58,10 @@ getMIX_MULTI.addpara <- function(dat, nClass, t_var, records, y_var, curveFun, i
       m_Omega <- mxMatrix(type = "Full", nrow = length(m_time), ncol = length(m_lag),
                           values = m_Omega_val, free = FALSE, name = paste0(y_var[traj], "Omega"))
       if (curveFun %in% c("nonparametric", "NonP")){
-        rate_loads <- mxMatrix("Full", nrow = length(m_lag), ncol = 1, c(F, rep(T, length(m_lag) - 1)),
-                               values = c(1, starts[[k]][[4]][[traj]][-1]),
-                               labels = paste0("c", k, y_var[traj], "_rel_rate", 1:length(m_lag)),
-                               byrow = T, name = paste0("c", k, y_var[traj], "r_loads"))
+        rate_loads <- mxMatrix("Full", nrow = length(m_lag), ncol = 1, c(FALSE, rep(TRUE, length(m_lag) - 1)),
+                               values = c(1, starts[[k]]$rel_rate[[traj]][-1]),
+                               labels = paste0("c", k, y_var[traj], "_rel_rate", seq_along(m_lag)),
+                               byrow = TRUE, name = paste0("c", k, y_var[traj], "r_loads"))
         status_loads <- mxAlgebraFromString(paste0(y_var[traj], "Omega %*% ", "c", k, y_var[traj], "r_loads"),
                                             name = paste0("c", k, y_var[traj], "s_loads"))
         slp_m <- mxAlgebraFromString(paste0("c", k, y_var[traj], "r_loads %*% ",

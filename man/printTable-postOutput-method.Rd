@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{An object of class "postOutput".}
 }
+\value{
+Called for its side effect of printing posterior probabilities, membership,
+entropy, and accuracy. Returns the object invisibly.
+}
 \description{
 Method for printing posterior probabilities, membership, entropy, and accuracy.
 }

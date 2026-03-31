@@ -56,9 +56,9 @@ RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
 # cluster TICs or growth TICs
 set.seed(20191029)
 MIX_BLS_LGCM_r <-  getMIX(
-  dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
+  dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM",
   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9, curveFun = "BLS",
-  intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3), growth_TIC = NULL, tries = 10
+  intrinsic = FALSE, growth_TIC = NULL, tries = 10
 )
 label1 <- getPosterior(
   model = MIX_BLS_LGCM_r@mxOutput, nClass = 3, label = FALSE, cluster_TIC = NULL
@@ -69,7 +69,7 @@ set.seed(20191029)
 MIX_BLS_LGCM.TIC_r <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
   cluster_TIC = c("gx1", "gx2"), y_var = "M", t_var = "T", records = 1:9,
-  curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
+  curveFun = "BLS", intrinsic = FALSE,
   growth_TIC = c("ex1", "ex2"), tries = 10
 )
 label2 <- getPosterior(
@@ -87,4 +87,7 @@ Routledge. \doi{10.1080/10705511.2014.919823}}
 Covariate Effects, and Class-Specific Parameters. Structural Equation Modeling: A Multidisciplinary Journal, 14(1), 26-47.
 Routledge. \doi{10.1080/10705510709336735}}
 }
+}
+\seealso{
+\code{\link{getMIX}}, \code{\link{getLatentKappa}}
 }

@@ -43,7 +43,7 @@ RMS_dat0$T9 <- RMS_dat0$T9 - baseT
 ## Single group model
 BLS_LGCM1 <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-  records = 1:9, res_scale = 0.1
+  records = 1:9
   )
 getSummary(model_list = list(BLS_LGCM1@mxOutput), HetModels = FALSE)
 ## Mixture model with two latent classes
@@ -51,18 +51,21 @@ set.seed(20191029)
 BLS_LGCM2 <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM", cluster_TIC = NULL,
   y_var = "M", t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
-  res_scale = list(0.3, 0.3), growth_TIC = NULL, tries = 10
+  growth_TIC = NULL, tries = 10
   )
 ## Mixture model with three latent classes
 set.seed(20191029)
 BLS_LGCM3 <-  getMIX(
-  dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM", cluster_TIC = NULL,
+  dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM", cluster_TIC = NULL,
   y_var = "M", t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
-  res_scale = list(0.3, 0.3, 0.3), growth_TIC = NULL, tries = 10
+  growth_TIC = NULL, tries = 10
   )
 
 getSummary(model_list = list(BLS_LGCM1@mxOutput, BLS_LGCM2@mxOutput, BLS_LGCM3@mxOutput),
   HetModels = TRUE)
 }
 
+}
+\seealso{
+\code{\link{getLGCM}}, \code{\link{getMIX}}, \code{\link{getMGroup}}
 }

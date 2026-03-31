@@ -55,6 +55,7 @@
 #' @return A pre-optimized mxModel for a longitudinal mixture model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxFitFunctionML mxExpectationMixture
 #'
@@ -84,7 +85,7 @@ getMIX.mxModel <- function(dat, nClass, sub_Model, cluster_TIC, t_var, y_var, cu
   }
   if (!is.null(cluster_TIC)){
     classBeta <- mxMatrix(type = "Full", nrow = nClass, ncol = length(cluster_TIC) + 1,
-                          free = rep(c(F, rep(T, nClass - 1)), length(cluster_TIC) + 1), values = starts[[length(starts)]],
+                          free = rep(c(FALSE, rep(TRUE, nClass - 1)), length(cluster_TIC) + 1), values = starts[[length(starts)]],
                           labels = paste0("beta", rep(1:nClass), rep(0:length(cluster_TIC), each = nClass)),
                           name = "classbeta")
     classPV <- mxMatrix(nrow = length(cluster_TIC) + 1, ncol = 1, labels = c("ONE", paste0("data.", cluster_TIC)),
@@ -97,7 +98,7 @@ getMIX.mxModel <- function(dat, nClass, sub_Model, cluster_TIC, t_var, y_var, cu
                         classPV, classP, algebraObjective, objective)
   }
   else if (is.null(cluster_TIC)){
-    classP <- mxMatrix("Full", nClass, 1, free = c(F, rep(T, nClass - 1)), values = starts[[length(starts)]],
+    classP <- mxMatrix("Full", nClass, 1, free = c(FALSE, rep(TRUE, nClass - 1)), values = starts[[length(starts)]],
                        labels = paste0("w", 1:nClass), name = "weights")
     algebraObjective <- mxExpectationMixture(paste0("Class", 1:nClass), weights = "weights", scale = "softmax")
     objective <- mxFitFunctionML()

@@ -2,9 +2,9 @@
 title: "Examples of Longitudinal Models with Time-varying Covariates"
 output: rmarkdown::html_vignette
 description: > 
-  This vignette provides a comprehensive exploration and practical examples of the `getTVC()` function. This function is designed to construct Latent Growth Curve Models (LGCMs) or Latent Change Score Models (LCSMs) with a (decomposed) time-varying covariate. The supported functional forms of LGCMs include linear, quadratic, negative exponential, Jenss-Bayley, and bilinear spline. LCSMs support quadratic, negative exponential, Jenss-Bayley, and nonparametric functions. Notably, the negative exponential and Jenss-Bayley LGCMs/LCSMs, as well as bilinear spline LGCMs, can be fitted as intrinsically nonlinear models. Furthermore, this function offers flexibility in allowing the incorporation of time-invariant covariates (TICs) as needed.
+  This vignette provides a comprehensive exploration and practical examples of the `getTVCmodel()` function. This function is designed to construct Latent Growth Curve Models (LGCMs) or Latent Change Score Models (LCSMs) with a (decomposed) time-varying covariate. The supported functional forms of LGCMs include linear, quadratic, negative exponential, Jenss-Bayley, and bilinear spline. LCSMs support quadratic, negative exponential, Jenss-Bayley, and nonparametric functions. Notably, the negative exponential and Jenss-Bayley LGCMs/LCSMs, as well as bilinear spline LGCMs, can be fitted as intrinsically nonlinear models. Furthermore, this function offers flexibility in allowing the incorporation of time-invariant covariates (TICs) as needed.
 vignette: >
-  %\VignetteIndexEntry{getTVC_examples}
+  %\VignetteIndexEntry{getTVCmodel_examples}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -14,6 +14,8 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+has_data <- nzchar(system.file("extdata", "getTVCmodel_examples.RData", package = "nlpsem"))
+knitr::opts_chunk$set(eval = has_data)
 ```
 
 ## Load nlpsem package, dependent packages and set CSOLNP as the optimizer
@@ -66,25 +68,16 @@ xstarts <- mean(baseT)
 ```{r, message = FALSE, eval = FALSE}
 set.seed(20191029)
 Math_TVC_BLS_f <- getTVCmodel(
-  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE, 
-  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 0, growth_TIC = "ex1", 
-  res_scale = 0.1, tries = 10
-  ) 
-paraBLS_TVC.f <- c(
-  "Y_alpha0", "Y_alpha1", "Y_alpha2", "Y_alphag", 
-  paste0("Y_psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")), 
-  "Y_residuals", "X_mueta0", "X_mueta1", paste0("X_psi", c("00", "01", "11")), 
-  paste0("X_rel_rate", 2:8), paste0("X_abs_rate", 1:8), "X_residuals",
-  paste0("betaTIC", c(0:2, "g")), paste0("betaTVC", c(0:2, "g")), "muTIC", "phiTIC", 
-  "Y_mueta0", "Y_mueta1", "Y_mueta2", "Y_mu_knot", "covBL", "kappa", "Cov_XYres"
+  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE,
+  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 0, growth_TIC = "ex1",
+  tries = 10
   )
 set.seed(20191029)
 Math_TVCslp_BLS_f <- getTVCmodel(
-  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE, 
-  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 1, growth_TIC = "ex1", 
-  res_scale = c(0.1, 0.1), res_cor = 0.3, tries = 10, paramOut = TRUE, 
-  names = paraBLS_TVC.f
-  ) 
+  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = TRUE,
+  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 1, growth_TIC = "ex1",
+  tries = 10, paramOut = TRUE
+  )
 ```
 
 ```{r}
@@ -107,32 +100,21 @@ A comparison between Figure 1 and Figure 2 demonstrates that incorporating a TVC
 
 ## Example 2: Fit reduced bilinear spline LGCMs with a decomposed TVC (interval-specific slopes, interval-specific changes, and change from baseline) to examine the influence of baseline teacher-reported approach to learning and the development in reading ability on the development of mathematics ability. It also includes a visualization showcasing the growth status of mathematics ability.
 ```{r, message = FALSE, eval = FALSE}
-paraBLS_TVC.r <- c(
-  "Y_alpha0", "Y_alpha1", "Y_alpha2", "Y_knot", 
-  paste0("Y_psi", c("00", "01", "02", "11", "12", "22")), "Y_residuals",
-  "X_mueta0", "X_mueta1", paste0("X_psi", c("00", "01", "11")), 
-  paste0("X_rel_rate", 2:8), paste0("X_abs_rate", 1:8), "X_residuals",
-  paste0("betaTIC", 0:2), paste0("betaTVC", 0:2), "muTIC", "phiTIC", 
-  "Y_mueta0", "Y_mueta1", "Y_mueta2", "covBL", "kappa", "Cov_XYres"
-  )
 set.seed(20191029)
 Math_TVCslp_BLS_r <- getTVCmodel(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 1, growth_TIC = "ex1", 
-  res_scale = c(0.1, 0.1), res_cor = 0.3, tries = 10,  paramOut = TRUE, 
-  names = paraBLS_TVC.r)    
+  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 1, growth_TIC = "ex1",
+  tries = 10, paramOut = TRUE)
 set.seed(20191029)
 Math_TVCchg_BLS_r <- getTVCmodel(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 2, growth_TIC = "ex1", 
-  res_scale = c(0.1, 0.1), res_cor = 0.3, tries = 10,  paramOut = TRUE, 
-  names = paraBLS_TVC.r)    
+  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 2, growth_TIC = "ex1",
+  tries = 10, paramOut = TRUE)
 set.seed(20191029)
 Math_TVCchgBL_BLS_r <- getTVCmodel(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 3, growth_TIC = "ex1", 
-  res_scale = c(0.1, 0.1), res_cor = 0.3, tries = 10,  paramOut = TRUE, 
-  names = paraBLS_TVC.r)    
+  records = 1:9, y_model = "LGCM", TVC = "R", decompose = 3, growth_TIC = "ex1",
+  tries = 10, paramOut = TRUE)    
 ```
 
 ```{r}

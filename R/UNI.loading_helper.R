@@ -25,6 +25,7 @@
 #' for latent change score models) and factor loadings of a univariate longitudinal outcome.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxMatrix mxAlgebraFromString mxAlgebra
 #'
@@ -32,7 +33,7 @@ getUNI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, records)
   # Define `outPoint` to store individual time points from raw data
   outPoint <- list()
   for (j in records){
-    outPoint[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var, j),
+    outPoint[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var, j),
                               name = paste0("t", j))
   }
   if (y_model == "LGCM"){
@@ -98,9 +99,9 @@ getUNI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, records)
         outLoads1 <- outLoads2 <- outLoads3 <- list()
         for(j in records){
           outLoads1[[j]] <- mxAlgebraFromString(paste0("t", j, " - Y_mug"), name = paste0("L1", j))
-          outLoads2[[j]] <- mxAlgebraFromString(paste0("abs(t", j, " - Y_mug)"), name = paste0("L2", j))
-          outLoads3[[j]] <- mxAlgebraFromString(paste0("-Y_mueta2s * (t", j, " - Y_mug)/abs(t", j,
-                                                       " - Y_mug) - Y_mueta2s"), name = paste0("L3", j))
+          outLoads2[[j]] <- mxAlgebraFromString(paste0("sqrt((t", j, " - Y_mug)^2 + 1e-6)"), name = paste0("L2", j))
+          outLoads3[[j]] <- mxAlgebraFromString(paste0("-Y_mueta2s * (t", j, " - Y_mug)/sqrt((t", j,
+                                                       " - Y_mug)^2 + 1e-6) - Y_mueta1s"), name = paste0("L3", j))
         }
         outLoads <- list(outLoads1, outLoads2, outLoads3)
       }
@@ -192,4 +193,3 @@ getUNI.loadings <- function(y_model, t_var, y_var, curveFun, intrinsic, records)
     return(list(outPoint, outLag, midTime, outLoads))
   }
 }
-

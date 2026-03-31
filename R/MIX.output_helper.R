@@ -37,6 +37,7 @@
 #' @return A dataframe containing point estimates and standard errors for the parameters of interest for a mixture model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxEval mxEvalByName mxSE diag2vec
 #'
@@ -55,15 +56,15 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                   model@output$estimate[grep(paste0("c", k, "mux"), names(model@output$estimate))],
                                   model@output$estimate[grep(paste0("c", k, "phi"), names(model@output$estimate))],
                                   mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]])), 4)
-        model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                 mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                   row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                     col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+        model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                 mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                   row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                     col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                  model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                 mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                 mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                  model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                  model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                 mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T)), 4)
+                                 mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE)), 4)
       }
       else if (is.null(growth_TIC)){
         model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
@@ -71,10 +72,10 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     row(mxEvalByName(paste0("c", k, "Y_psi0"), model = model@submodels[[k]])) >=
                                       col(mxEvalByName(paste0("c", k, "Y_psi0"), model = model@submodels[[k]]))],
                                   model@output$estimate[grep(paste0("c", k, "Y_residuals"), names(model@output$estimate))]), 4)
-        model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                 mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)[
-                                   row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)) >=
-                                     col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T))],
+        model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                 mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)[
+                                   row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)) >=
+                                     col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE))],
                                  model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))]), 4)
       }
     }
@@ -97,22 +98,22 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                     mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                     diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "Y_rel_rate"), names(model@output$standardErrors[, 1]))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                   mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                   mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
         }
         else if (is.null(growth_TIC)){
           model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
@@ -127,18 +128,18 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                     mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                     diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)[
-                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)) >=
-                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T))],
+          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)[
+                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)) >=
+                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "Y_rel_rate"), names(model@output$standardErrors[, 1]))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
         }
       }
       else {
@@ -158,21 +159,21 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                     mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                     diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                   mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                   mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
         }
         else if (is.null(growth_TIC)){
           model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
@@ -186,17 +187,17 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                     mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                     diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)[
-                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)) >=
-                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T))],
+          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)[
+                                     row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)) >=
+                                       col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                   mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                   diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
         }
       }
     }
@@ -216,17 +217,17 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                       model@output$estimate[grep(paste0("c", k, "phi"), names(model@output$estimate))],
                                       mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
                                       model@output$estimate[grep(paste0("c", k, "kappa"), names(model@output$estimate))]), 4)
-            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_m"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_v"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                     mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "covBL"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))]), 4)
@@ -240,10 +241,10 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                       model@output$estimate[grep(paste0("c", k, "TVC_m"), names(model@output$estimate))],
                                       model@output$estimate[grep(paste0("c", k, "TVC_v"), names(model@output$estimate))],
                                       model@output$estimate[grep(paste0("c", k, "kappa"), names(model@output$estimate))]), 4)
-            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)[
-                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)) >=
-                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T))],
+            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)[
+                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)) >=
+                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_m"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_v"), names(model@output$standardErrors[, 1]))],
@@ -273,25 +274,25 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_rel_rate"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_m"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_v"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
             else if (is.null(growth_TIC)){
               model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
@@ -309,21 +310,21 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_rel_rate"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_m"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_v"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
           }
           else{
@@ -346,24 +347,24 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_m"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_v"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
             else if (is.null(growth_TIC)){
               model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
@@ -380,20 +381,20 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi0"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_m"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "TVC_v"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
           }
           est[[k]] <- data.frame(Name = paste0("c", k, names), Estimate = model.est[[k]], SE = model.se[[k]])
@@ -402,9 +403,10 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
       else if (decompose != 0){
         if (y_model == "LGCM"){
           X_slp_m.est <- X_slp_m.se <- rep(0, length(records) - 1)
-          for (j in records[-1]){
-            X_slp_m.est[j - 1] <- mxEvalByName(paste0("c", k, "abs_rate", j), model = model@submodels[[k]])
-            X_slp_m.se[j - 1] <- mxSE(paste0("Class", k, ".c", k, "abs_rate", j), model = model, forceName = T)
+          for (idx in seq_along(records[-1])){
+            j <- records[-1][idx]
+            X_slp_m.est[idx] <- mxEvalByName(paste0("c", k, "abs_rate", j), model = model@submodels[[k]])
+            X_slp_m.se[idx] <- mxSE(paste0("Class", k, ".c", k, "abs_rate", j), model = model, forceName = TRUE)
           }
           if (!is.null(growth_TIC)){
             model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_alpha0"), model = model@submodels[[k]]),
@@ -425,21 +427,21 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                       model@output$estimate[grep(paste0("c", k, "covBL"), names(model@output$estimate))],
                                       model@output$estimate[grep(paste0("c", k, "kappa"), names(model@output$estimate))],
                                       model@output$estimate[grep(paste0("c", k, "Cov_XYres"), names(model@output$estimate))]), 4)
-            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)[
-                                       row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)) >=
-                                         col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))],
+                                     mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)[
+                                       row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)) >=
+                                         col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "X_rel_rate"), names(model@output$standardErrors[, 1]))], X_slp_m.se,
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "X_residuals"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                     mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "covBL"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))]), 4)
@@ -460,19 +462,19 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                       mxEvalByName(paste0("c", k, "Y_mean0"), model = model@submodels[[k]]),
                                       model@output$estimate[grep(paste0("c", k, "kappa"), names(model@output$estimate))],
                                       model@output$estimate[grep(paste0("c", k, "Cov_XYres"), names(model@output$estimate))]), 4)
-            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+            model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                       row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                         col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)[
-                                       row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)) >=
-                                         col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))],
+                                     mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)[
+                                       row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)) >=
+                                         col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "X_rel_rate"), names(model@output$standardErrors[, 1]))], X_slp_m.se,
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "X_residuals"), names(model@output$standardErrors[, 1]))],
-                                     mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
-                                     mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                     mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
+                                     mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                      model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))]), 4)
           }
@@ -480,9 +482,10 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
         }
         else if (y_model == "LCSM"){
           X_slp_m.est <- X_slp_m.se <- rep(0, length(records) - 1)
-          for (j in records[-1]){
-            X_slp_m.est[j - 1] <- mxEvalByName(paste0("c", k, "abs_rate", j), model = model@submodels[[k]])
-            X_slp_m.se[j - 1] <- mxSE(paste0("Class", k, ".c", k, "abs_rate", j), model = model, forceName = T)
+          for (idx in seq_along(records[-1])){
+            j <- records[-1][idx]
+            X_slp_m.est[idx] <- mxEvalByName(paste0("c", k, "abs_rate", j), model = model@submodels[[k]])
+            X_slp_m.se[idx] <- mxSE(paste0("Class", k, ".c", k, "abs_rate", j), model = model, forceName = TRUE)
           }
           if (curveFun %in% c("nonparametric", "NonP")){
             if (!is.null(growth_TIC)){
@@ -511,31 +514,31 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_rel_rate"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))],
+                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_rel_rate"), names(model@output$standardErrors[, 1]))], X_slp_m.se,
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "covBL"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
             else if (is.null(growth_TIC)){
               model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_alpha0"), model = model@submodels[[k]]),
@@ -560,28 +563,28 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_rel_rate"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))],
+                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_rel_rate"), names(model@output$standardErrors[, 1]))], X_slp_m.se,
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
           }
           else{
@@ -610,30 +613,30 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))],
+                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_rel_rate"), names(model@output$standardErrors[, 1]))], X_slp_m.se,
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "mux"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "phi"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "covBL"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
             else if (is.null(growth_TIC)){
               model.est[[k]] <- round(c(mxEvalByName(paste0("c", k, "Y_alpha0"), model = model@submodels[[k]]),
@@ -657,27 +660,27 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                         mxEvalByName(paste0("c", k, "Ychg_inv_v"), model = model@submodels[[k]]),
                                         mxEvalByName(paste0("c", k, "Ychg_bl_m"), model = model@submodels[[k]]),
                                         diag(mxEvalByName(paste0("c", k, "Ychg_bl_v"), model = model@submodels[[k]]))), 4)
-              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))],
+              model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "Y_alpha0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Y_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)[
-                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T)) >=
-                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))],
+                                       mxSE(paste0("Class", k, ".c", k, "X_mean0"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)[
+                                         row(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE)) >=
+                                           col(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_rel_rate"), names(model@output$standardErrors[, 1]))], X_slp_m.se,
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "X_residuals"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = T),
+                                       mxSE(paste0("Class", k, ".c", k, "beta"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Y_mean0"), model, forceName = TRUE),
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "kappa"), names(model@output$standardErrors[, 1]))],
                                        model@output$standardErrors[, 1][grep(paste0("c", k, "Cov_XYres"), names(model@output$standardErrors[, 1]))],
-                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = T)),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = T),
-                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = T),
-                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = T))), 4)
+                                       mxSE(paste0("Class", k, ".c", k, "Yslp_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Yslp_v"), model, forceName = TRUE)),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_m"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_inv_v"), model, forceName = TRUE),
+                                       mxSE(paste0("Class", k, ".c", k, "Ychg_bl_m"), model, forceName = TRUE),
+                                       diag(mxSE(paste0("Class", k, ".c", k, "Ychg_bl_v"), model, forceName = TRUE))), 4)
             }
           }
           est[[k]] <- data.frame(Name = paste0("c", k, names), Estimate = model.est[[k]], SE = model.se[[k]])
@@ -687,11 +690,11 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
     else if (sub_Model == "MGM"){
       mean_est <- mean_se <- psi_est <- psi_se <- res_est <- res_se <-
         psi_btw_est <- psi_btw_se <- res_btw_est <- res_btw_se <- outcome_est <- outcome_se <- btw_est <- btw_se <- list()
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         mean_est[[traj]] <- mxEvalByName(paste0("c", k, y_var[traj], "_mean0"), model = model@submodels[[k]])
-        mean_se[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "_mean0"), model, forceName = T)
+        mean_se[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "_mean0"), model, forceName = TRUE)
         psi_est[[traj]] <- mxEvalByName(paste0("c", k, y_var[traj], "_psi0"), model = model@submodels[[k]])
-        psi_se[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "_psi0"), model, forceName = T)
+        psi_se[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "_psi0"), model, forceName = TRUE)
         res_est[[traj]] <- model@output$estimate[grep(paste0("c", k, y_var[traj], "_residuals"),
                                                       names(model@output$estimate))]
         res_se[[traj]] <- model@output$standardErrors[, 1][grep(paste0("c", k, y_var[traj], "_residuals"),
@@ -703,15 +706,16 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
       }
       for (traj_i in 1:(length(y_var) - 1)){
         for (traj_j in traj_i:(length(y_var) - 1)){
-          psi_btw_est[[traj_i + traj_j - 1]] <- mxEvalByName(paste0("c", k, y_var[traj_i], y_var[traj_j + 1],
-                                                                    "_psi"), model = model@submodels[[k]])
-          psi_btw_se[[traj_i + traj_j - 1]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj_i], y_var[traj_j + 1], "_psi"),
-                                                    model, forceName = T)
+          pair_idx <- traj_i + traj_j - 1
+          psi_btw_est[[pair_idx]] <- mxEvalByName(paste0("c", k, y_var[traj_i], y_var[traj_j + 1],
+                                                         "_psi"), model = model@submodels[[k]])
+          psi_btw_se[[pair_idx]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj_i], y_var[traj_j + 1], "_psi"),
+                                         model, forceName = TRUE)
           res_btw_est[[length(res_btw_est) + 1]] <- model@output$estimate[grep(paste0("c", k, y_var[traj_i], y_var[traj_j + 1], "_RES"), names(model@output$estimate))]
           res_btw_se[[length(res_btw_se) + 1]] <- model@output$standardErrors[, 1][grep(paste0("c", k, y_var[traj_i], y_var[traj_j + 1], "_RES"),
                                                                                         names(model@output$standardErrors[, 1]))]
-          btw_est[[length(btw_est) + 1]] <- c(unlist(c(psi_btw_est)), unlist(res_btw_est))
-          btw_se[[length(btw_se) + 1]] <- c(unlist(c(psi_btw_se)), unlist(res_btw_se))
+          btw_est <- .append_between_output(btw_est, psi_btw_est[[pair_idx]], res_btw_est[[length(res_btw_est)]])
+          btw_se <- .append_between_output(btw_se, psi_btw_se[[pair_idx]], res_btw_se[[length(res_btw_se)]])
         }
       }
       if (y_model == "LGCM"){
@@ -723,19 +727,19 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
         slp_m.est_L <- slp_v.est_L <- slp_cov.est_L <- chg_inv_m.est_L <- chg_inv_v.est_L <- chg_bl_m.est_L <- chg_bl_v.est_L <-
           slp_m.se_L <- slp_v.se_L <- slp_cov.se_L <- chg_inv_m.se_L <- chg_inv_v.se_L <- chg_bl_m.se_L <- chg_bl_v.se_L <-
           rel_val_est_L <- rel_val_se_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           slp_m.est_L[[traj]] <- mxEvalByName(paste0("c", k, y_var[traj], "slp_m"), model = model@submodels[[k]])
           slp_v.est_L[[traj]] <- diag(mxEvalByName(paste0("c", k, y_var[traj], "slp_v"), model = model@submodels[[k]]))
           chg_inv_m.est_L[[traj]] <- mxEvalByName(paste0("c", k, y_var[traj], "chg_inv_m"), model = model@submodels[[k]])
           chg_inv_v.est_L[[traj]] <- mxEvalByName(paste0("c", k, y_var[traj], "chg_inv_v"), model = model@submodels[[k]])
           chg_bl_m.est_L[[traj]] <- mxEvalByName(paste0("c", k, y_var[traj], "chg_bl_m"), model = model@submodels[[k]])
           chg_bl_v.est_L[[traj]] <- diag(mxEvalByName(paste0("c", k, y_var[traj], "chg_bl_v"), model = model@submodels[[k]]))
-          slp_m.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "slp_m"), model, forceName = T)
-          slp_v.se_L[[traj]] <- diag(mxSE(paste0("Class", k, ".c", k, y_var[traj], "slp_v"), model, forceName = T))
-          chg_inv_m.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_inv_m"), model, forceName = T)
-          chg_inv_v.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_inv_v"), model, forceName = T)
-          chg_bl_m.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_bl_m"), model, forceName = T)
-          chg_bl_v.se_L[[traj]] <- diag(mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_bl_v"), model, forceName = T))
+          slp_m.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "slp_m"), model, forceName = TRUE)
+          slp_v.se_L[[traj]] <- diag(mxSE(paste0("Class", k, ".c", k, y_var[traj], "slp_v"), model, forceName = TRUE))
+          chg_inv_m.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_inv_m"), model, forceName = TRUE)
+          chg_inv_v.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_inv_v"), model, forceName = TRUE)
+          chg_bl_m.se_L[[traj]] <- mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_bl_m"), model, forceName = TRUE)
+          chg_bl_v.se_L[[traj]] <- diag(mxSE(paste0("Class", k, ".c", k, y_var[traj], "chg_bl_v"), model, forceName = TRUE))
           if (curveFun %in% c("nonparametric", "NonP")){
             rel_val_est_L[[traj]] <- model@output$estimate[grep(paste0("c", k, y_var[traj], "_rel_rate"),
                                                                 names(model@output$estimate))]
@@ -779,17 +783,17 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "YM_RES")]), 4)
           model.se[[k]] <- round(c(model@output$standardErrors[, 1][grep(paste0("c", k, "muX"), names(model@output$standardErrors[, 1]))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "phi11"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = T))[c(1, 2, 4)],
-                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))[c(1, 2, 4)],
-                                   mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = T))[c(1, 2, 4)],
-                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = T),
+                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = TRUE),
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "Y_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "M_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "YM_RES")]), 4)
@@ -814,17 +818,17 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "YM_RES")]), 4)
           model.se[[k]] <- round(c(model@output$standardErrors[, 1][grep(paste0("c", k, "muX"), names(model@output$standardErrors[, 1]))],
                                    model@output$standardErrors[, 1][grep(paste0("c", k, "phi11"), names(model@output$standardErrors[, 1]))],
-                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = T),
+                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = TRUE),
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "Y_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "M_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "YM_RES")]), 4)
@@ -852,19 +856,19 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "YM_RES")],
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "YX_RES")],
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "MX_RES")]), 4)
-          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "X_mean"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))[c(1, 2, 4)],
-                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = T))[c(1, 2, 4)],
-                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))[c(1, 2, 4)],
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = T))[c(1, 2, 4)],
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = T))[c(1, 2, 4)],
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = T))[c(1, 2, 4)],
-                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = T))[c(1, 2, 4)],
+          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "X_mean"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = TRUE))[c(1, 2, 4)],
+                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = TRUE))[c(1, 2, 4)],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "Y_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "M_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "X_residuals")],
@@ -893,19 +897,19 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "YM_RES")],
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "YX_RES")],
                                     model@output$estimate[names(model@output$estimate) == paste0("c", k, "MX_RES")]), 4)
-          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "X_mean"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = T))[c(1:3, 5:6, 9)],
-                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = T),
-                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = T),
-                                   c(mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = T))[c(1:3, 5:6, 9)],
+          model.se[[k]] <- round(c(mxSE(paste0("Class", k, ".c", k, "X_mean"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "X_psi0"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   mxSE(paste0("Class", k, ".c", k, "M_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "M_psi_r"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   mxSE(paste0("Class", k, ".c", k, "Y_alpha"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "Y_psi_r"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xm"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_xy"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   c(mxSE(paste0("Class", k, ".c", k, "beta_my"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
+                                   mxSE(paste0("Class", k, ".c", k, "M_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "Y_mean"), model, forceName = TRUE),
+                                   mxSE(paste0("Class", k, ".c", k, "mediator"), model, forceName = TRUE),
+                                   c(mxSE(paste0("Class", k, ".c", k, "total"), model, forceName = TRUE))[c(1:3, 5:6, 9)],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "Y_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "M_residuals")],
                                    model@output$standardErrors[, 1][names(model@output$standardErrors[, 1]) == paste0("c", k, "X_residuals")],
@@ -919,7 +923,7 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
     est[[k]] <- data.frame(Name = paste0("c", k, names), Estimate = model.est[[k]], SE = model.se[[k]])
   }
   if (!is.null(cluster_TIC)){
-    est.beta <- data.frame(Name = paste0("beta", rep(2:nClass, length(cluster_TIC)), rep(0:2, each = nClass - 1)),
+    est.beta <- data.frame(Name = .cluster_tic_param_names(nClass, cluster_TIC),
                            Estimate = round(c(mxEval(classbeta, model)[-1, ]), 4),
                            SE = round(c(mxSE(classbeta, model)[-1, ]), 4))
     estimate_out <- rbind(do.call(rbind.data.frame, est), est.beta)
@@ -932,5 +936,3 @@ getMIX.output <- function(model, nClass, sub_Model, cluster_TIC, y_var, curveFun
   }
   return(estimate_out)
 }
-
-

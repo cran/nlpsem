@@ -24,6 +24,7 @@
 #' state effect of the TVC on the corresponding longitudinal outcome.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxPath mxAlgebra mxAlgebraFromString
 #'
@@ -37,21 +38,21 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
       if (!is.null(growth_TIC)){
         nTICs <- length(growth_TIC)
         # Means of TICs
-        X_MEAN <- mxPath(from = "one", to = growth_TIC, arrows = 1, free = TRUE, values = starts[[k]][[3]][[1]],
-                         labels = c(paste0("c", k, "mux", 1:length(growth_TIC))))
+        X_MEAN <- mxPath(from = "one", to = growth_TIC, arrows = 1, free = TRUE, values = starts[[k]]$BL_starts$means,
+                         labels = c(paste0("c", k, "mux", seq_along(growth_TIC))))
         # Var-cov matrix of TICs
         X_VAR <- mxPath(from = growth_TIC, to = growth_TIC, arrows = 2, connect = "unique.pairs", free = TRUE,
-                        values = starts[[k]][[3]][[2]], labels = paste0("c", k, "phi", 1:(nTICs * (nTICs + 1)/2)))
+                        values = starts[[k]]$BL_starts$covMatrix, labels = paste0("c", k, "phi", 1:(nTICs * (nTICs + 1)/2)))
         # TVC effect on the corresponding longitudinal outcome
         KAPPA <- mxPath(from = paste0(TVC, records), to = paste0(y_var, records), arrows = 1, free = TRUE,
-                        values = starts[[k]][[5]], labels = paste0("c", k, "kappa"))
+                        values = starts[[k]]$kappa, labels = paste0("c", k, "kappa"))
         output_CL[[k]] <- list(KAPPA, X_MEAN, X_VAR)
       }
       # If growth_TIC is not provided
       else if (is.null(growth_TIC)){
         # TVC effect on the corresponding longitudinal outcome
         KAPPA <- mxPath(from = paste0(TVC, records), to = paste0(y_var, records), arrows = 1, free = TRUE,
-                        values = starts[[k]][[3]], labels = paste0("c", k, "kappa"))
+                        values = starts[[k]]$kappa, labels = paste0("c", k, "kappa"))
         output_CL[[k]] <- list(KAPPA)
       }
     }
@@ -74,12 +75,12 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
       if (!is.null(growth_TIC)){
         nTICs <- length(growth_TIC)
         start_X <- matrix(0, nrow = nTICs + 2, ncol = nTICs + 2)
-        start_X[1:(nTICs + 1), 1:(nTICs + 1)] <- starts[[k]][[3]][[2]]
-        start_X[nTICs + 2, nTICs + 1] <- start_X[nTICs + 1, nTICs + 2] <- starts[[k]][[2]][[2]][2]
-        start_X[nTICs + 2, nTICs + 2] <- starts[[k]][[2]][[2]][3]
+        start_X[1:(nTICs + 1), 1:(nTICs + 1)] <- starts[[k]]$BL_starts$covMatrix
+        start_X[nTICs + 2, nTICs + 1] <- start_X[nTICs + 1, nTICs + 2] <- starts[[k]]$TVC_starts$covMatrix[2]
+        start_X[nTICs + 2, nTICs + 2] <- starts[[k]]$TVC_starts$covMatrix[3]
         name_X <- matrix(NA, nrow = nTICs + 2, ncol = nTICs + 2)
         name_X[(nrow(name_X) - 1):nrow(name_X), (ncol(name_X) - 1):ncol(name_X)] <-
-          matrix(paste0("c", k, c("X_psi00", "X_psi01", "X_psi01", "X_psi11")), byrow = T, nrow = 2)
+          matrix(paste0("c", k, c("X_psi00", "X_psi01", "X_psi01", "X_psi11")), byrow = TRUE, nrow = 2)
         for (i in 1:nTICs){
           for (j in 1:nTICs){
             name_X[i, j] <- paste0("c", k, "phi", j, i)
@@ -87,8 +88,8 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
         }
         name_X[1:nTICs, nTICs + 1] <- name_X[nTICs + 1, 1:nTICs] <- paste0("c", k, "covBL", 1:nTICs)
         X_MEAN <- mxPath(from = "one", to = c(growth_TIC, "eta0x", "eta1x"), arrows = 1, free = TRUE,
-                         values = c(starts[[k]][[3]][[1]][1:length(growth_TIC)], starts[[k]][[2]][[1]]),
-                         labels = c(paste0("c", k, "mux", 1:length(growth_TIC)),
+                         values = c(starts[[k]]$BL_starts$means[seq_along(growth_TIC)], starts[[k]]$TVC_starts$means),
+                         labels = c(paste0("c", k, "mux", seq_along(growth_TIC)),
                                     paste0("c", k, c("X_mueta0", "X_mueta1"))))
         X_VAR <- mxPath(from = c(growth_TIC, "eta0x", "eta1x"), to = c(growth_TIC, "eta0x", "eta1x"), arrows = 2,
                         connect = "unique.pairs", free = !(start_X[row(start_X) >= col(start_X)] == 0),
@@ -96,24 +97,24 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
                         labels = name_X[row(name_X) >= col(name_X)])
         X_GF_LOADINGS <- list(mxPath(from = "eta0x", to = "lx1", arrows = 1, free = FALSE, values = 1),
                               mxPath(from = "eta1x", to = paste0("dx", records[-1]), arrows = 1,
-                                     free = c(F, rep(T, length(records) - 2)), values = c(1, starts[[k]][[2]][[4]][-1]),
+                                     free = c(FALSE, rep(TRUE, length(records) - 2)), values = c(1, starts[[k]]$TVC_starts$rel_rate[-1]),
                                      labels = paste0("c", k, "X_rel_rate", 1:(length(records) - 1))))
       }
       else if (is.null(growth_TIC)){
         X_MEAN <- mxPath(from = "one", to = c("eta0x", "eta1x"), arrows = 1, free = TRUE,
-                         values = starts[[k]][[2]][[1]], labels = paste0("c", k, c("X_mueta0", "X_mueta1")))
+                         values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, c("X_mueta0", "X_mueta1")))
         X_VAR <- mxPath(from = c("eta0x", "eta1x"), to = c("eta0x", "eta1x"), arrows = 2, connect = "unique.pairs",
-                        free = TRUE, values = starts[[k]][[2]][[2]],
+                        free = TRUE, values = starts[[k]]$TVC_starts$covMatrix,
                         labels = paste0("c", k, c("X_psi00", "X_psi01", "X_psi11")))
         X_GF_LOADINGS <- list(mxPath(from = "eta0x", to = "lx1", arrows = 1, free = FALSE, values = 1),
                               mxPath(from = "eta1x", to = paste0("dx", records[-1]), arrows = 1,
-                                     free = c(F, rep(T, length(records) - 2)), values = c(1, starts[[k]][[2]][[4]][-1]),
+                                     free = c(FALSE, rep(TRUE, length(records) - 2)), values = c(1, starts[[k]]$TVC_starts$rel_rate[-1]),
                                      labels = paste0("c", k, "X_rel_rate", 1:(length(records) - 1))))
       }
       X_RES <- mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2,
-                      free = TRUE, values = starts[[k]][[2]][[3]], labels = paste0("c", k, "X_residuals"))
+                      free = TRUE, values = starts[[k]]$TVC_starts$residuals, labels = paste0("c", k, "X_residuals"))
       XY_COV <- mxPath(from = paste0(TVC, records), to = paste0(y_var, records), arrows = 2,
-                       free = TRUE, values = starts[[k]][[6]], labels = paste0("c", k, "Cov_XYres"))
+                       free = TRUE, values = starts[[k]]$XY_cov, labels = paste0("c", k, "Cov_XYres"))
       X_PATH_L <- mxPath(from = paste0("lx", records), to = paste0(TVC, records), arrows = 1,
                          free = FALSE, values = 1)
 
@@ -124,7 +125,7 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
         X_PATH_AUTO <- mxPath(from = paste0("lx", records[-length(records)]), to = paste0("lx", records[-1]),
                               arrows = 1, free = FALSE, values = 1)
         KAPPA <- mxPath(from = paste0("dx", records[-1]), to = paste0(y_var, records[-1]), arrows = 1, free = TRUE,
-                        values = starts[[k]][[5]], labels = paste0("c", k, "kappa"))
+                        values = starts[[k]]$kappa, labels = paste0("c", k, "kappa"))
         X_PATH_SLP_L <- list(X_PATH_SLP)
         X_PATH_AUTO_L <- list(X_PATH_AUTO)
       }
@@ -137,7 +138,7 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
         X_PATH_AUTO <- mxPath(from = paste0("lx", records[-length(records)]), to = paste0("lx", records[-1]),
                               arrows = 1, free = FALSE, values = 1)
         KAPPA <- mxPath(from = paste0("deltax", records[-1]), to = paste0(y_var, records[-1]), arrows = 1, free = TRUE,
-                        values = starts[[k]][[5]], labels = paste0("c", k, "kappa"))
+                        values = starts[[k]]$kappa, labels = paste0("c", k, "kappa"))
         X_PATH_SLP_L <- list(X_PATH_SLP1, X_PATH_SLP2)
         X_PATH_AUTO_L <- list(X_PATH_AUTO)
       }
@@ -152,7 +153,7 @@ getMIX_TVC.info <- function(nClass, y_var, records, growth_TIC, TVC, decompose, 
                                to = paste0("Deltax", records[-c(1, 2)]), arrows = 1, free = FALSE, values = 1)
         X_PATH_AUTO2 <- mxPath(from = "lx1", to = paste0("lx", records[-1]), arrows = 1, free = FALSE, values = 1)
         KAPPA <- mxPath(from = paste0("Deltax", records[-1]), to = paste0(y_var, records[-1]), arrows = 1, free = TRUE,
-                        values = starts[[k]][[5]], labels = paste0("c", k, "kappa"))
+                        values = starts[[k]]$kappa, labels = paste0("c", k, "kappa"))
         X_PATH_SLP_L <- list(X_PATH_SLP1, X_PATH_SLP2)
         X_PATH_AUTO_L <- list(X_PATH_AUTO1, X_PATH_AUTO2)
       }

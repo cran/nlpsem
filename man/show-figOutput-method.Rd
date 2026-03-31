@@ -9,6 +9,9 @@
 \arguments{
 \item{object}{An object of class "figOutput".}
 }
+\value{
+Called for its side effect of displaying figures. Returns the object invisibly.
+}
 \description{
 Method to display a summary of the figOutput object when printed.
 }

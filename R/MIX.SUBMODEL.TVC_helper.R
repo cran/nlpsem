@@ -38,6 +38,7 @@
 #' @return A list of manifest and latent variables and paths for an mxModel object.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxPath mxModel mxAlgebraFromString mxMatrix mxFitFunctionML
 #'
@@ -60,7 +61,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
   }
   TVC_info <- getMIX_TVC.info(nClass = nClass, y_var = y_var, records = records, growth_TIC = growth_TIC, TVC = TVC,
                               decompose = decompose, starts = starts)
-  # Obtain factor loadigs for the specified functional form
+  # Obtain factor loadings for the specified functional form
   GF_loadings <- getMIX_UNI.loadings(nClass = nClass, y_model = y_model, t_var = t_var, y_var = y_var,
                                      curveFun = curveFun, intrinsic = intrinsic, records = records)
   BETA <- class.list <- list()
@@ -74,15 +75,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records),
                                               arrows = 1, free = FALSE, values = 1),
@@ -90,35 +91,35 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                               arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L1", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_alpha0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01), ",
                                                                   "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                            name = paste0("c", k, "Y_psi_r")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                        mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                                values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                            name = paste0("c", k, "Y_mean0")),
-                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records),
                                               arrows = 1, free = FALSE, values = 1),
@@ -126,17 +127,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                               arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L1", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_mean0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01), ",
                                                                   "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                            name = paste0("c", k, "Y_psi0")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
-                                       TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
+                                       TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -146,15 +147,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records),
                                               arrows = 1, free = FALSE, values = 1),
@@ -162,7 +163,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                               arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L1", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_alpha0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01), ",
@@ -174,33 +175,33 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                            name = paste0("c", k, "X_psi0")),
                                        mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                        mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                   "rbind(c", k, "beta0TVC, c", k, "beta1TVC))"),
                                                            name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                            name = paste0("c", k, "BL_mean")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                            name = paste0("c", k, "Y_mean0")),
-                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                   labels = paste0("c", k, "beta", p - 1, "TVC"))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records),
                                               arrows = 1, free = FALSE, values = 1),
@@ -208,7 +209,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                               arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L1", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_alpha0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01), ",
@@ -223,7 +224,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                            name = paste0("c", k, "beta")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "X_mueta0"),
                                                            name = paste0("c", k, "Y_mean0")),
-                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -236,15 +237,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -254,7 +255,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                               values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records),
-                                              arrows = 2, free = TRUE, values = starts[[k]][[1]][[3]],
+                                              arrows = 2, free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_alpha0")),
@@ -263,29 +264,29 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                            name = paste0("c", k, "Y_psi_r")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                        mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                                values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                            name = paste0("c", k, "Y_mean0")),
-                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -295,7 +296,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                               values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records),
-                                              arrows = 2, free = TRUE, values = starts[[k]][[1]][[3]],
+                                              arrows = 2, free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_mean0")),
@@ -304,10 +305,10 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                            name = paste0("c", k, "Y_psi0")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
-                                       TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
+                                       TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -317,15 +318,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -335,7 +336,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                               values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records),
-                                              arrows = 2, free = TRUE, values = starts[[k]][[1]][[3]],
+                                              arrows = 2, free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_alpha0")),
@@ -349,35 +350,35 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                            name = paste0("c", k, "X_psi0")),
                                        mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                        mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                   "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                   "beta2TVC))"),
                                                            name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                            name = paste0("c", k, "BL_mean")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                            name = paste0("c", k, "Y_mean0")),
-                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                   labels = paste0("c", k, "beta", p - 1, "TVC"))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -387,7 +388,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                               values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records),
-                                              arrows = 2, free = TRUE, values = starts[[k]][[1]][[3]],
+                                              arrows = 2, free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_alpha0")),
@@ -404,7 +405,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "beta2TVC)"), name = paste0("c", k, "beta")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "X_mueta0"),
                                                            name = paste0("c", k, "Y_mean0")),
-                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                       TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -418,20 +419,20 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
-              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)))))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -440,7 +441,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -448,32 +449,32 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -482,7 +483,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -490,10 +491,10 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
-                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
+                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -503,26 +504,26 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (decompose == 1){
               Y_nGF <- length(latents) - (length(records) * 2 - 1) - 2
             }
-            else if (I(decompose == 2 | decompose == 3)) {
+            else if (decompose == 2 | decompose == 3) {
               Y_nGF <- length(latents) - (length(records) * 2 - 1) - (length(records) - 1) - 2
             }
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
-              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -531,7 +532,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -544,40 +545,40 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "betagTVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
-              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF],
+              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF],
                                       labels = paste0("c", k, "beta", "g", "TVC"))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -586,7 +587,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -603,7 +604,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "X_mueta0"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -616,24 +617,24 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 1),
                                          mxPath(from = "eta1Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L1", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
@@ -641,37 +642,37 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:2, ] + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 1),
                                          mxPath(from = "eta1Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L1", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_mean0")),
@@ -679,10 +680,10 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
-                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
+                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -692,24 +693,24 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 1),
                                          mxPath(from = "eta1Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L1", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
@@ -722,42 +723,42 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:2, ] + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 1),
                                          mxPath(from = "eta1Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L1", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
@@ -773,7 +774,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:2, ] + c", k, "beta %*% c", k, "X_mueta0"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -788,19 +789,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
-              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)))))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -812,7 +813,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -821,32 +822,32 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psi2g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 4, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:4, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:4, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -858,7 +859,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -867,10 +868,10 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psi2g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
-                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
+                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -880,19 +881,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
-              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -904,7 +905,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -918,40 +919,40 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 4, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:4, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:4, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "beta2TVC, c", k, "betagTVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
-              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF],
+              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF],
                                       labels = paste0("c", k, "beta", "g", "TVC"))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -963,7 +964,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -981,7 +982,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "X_mueta0"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -994,17 +995,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -1014,7 +1015,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1022,31 +1023,31 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, ] + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -1056,7 +1057,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1064,10 +1065,10 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
-                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
+                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -1077,17 +1078,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -1097,7 +1098,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1110,37 +1111,37 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "beta2TVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, ] + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
@@ -1150,7 +1151,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0(y_var, records), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1167,7 +1168,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, ] + c", k, "beta %*% c", k, "X_mueta0"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -1182,19 +1183,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
-              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)))))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]],
+                                                values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s", "Y_psi0gs", "Y_psi11s",
                                                                           "Y_psi12s", "Y_psi1gs", "Y_psi22s", "Y_psi2gs", "Y_psiggs"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1205,7 +1206,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot, 0),",
                                                                     "cbind(0, 1, -1, 0),",
                                                                     "cbind(0, 1, 1, 0),",
@@ -1222,19 +1223,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0gs, c", k, "Y_psi1gs, c", k, "Y_psi2gs, c", k, "Y_psiggs))"),
                                                              name = paste0("c", k, "Y_psi_s")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 4, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:4, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_s")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:4, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_s")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "func[1:3, 1:3] %*% c", k,
                                                                     "Y_alpha_s, c", k, "Y_knot)"),
                                                              name = paste0("c", k, "Y_alpha0")),
@@ -1244,17 +1245,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]],
+                                                values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s", "Y_psi0gs", "Y_psi11s",
                                                                           "Y_psi12s", "Y_psi1gs", "Y_psi22s", "Y_psi2gs", "Y_psiggs"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1265,7 +1266,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot, 0),",
                                                                     "cbind(0, 1, -1, 0),",
                                                                     "cbind(0, 1, 1, 0),",
@@ -1282,15 +1283,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0gs, c", k, "Y_psi1gs, c", k, "Y_psi2gs, c", k, "Y_psiggs))"),
                                                              name = paste0("c", k, "Y_psi_s")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxAlgebraFromString(paste0("rbind(c", k, "func[1:3, 1:3] %*% c", k,
                                                                     "Y_mean_s, c", k, "Y_knot)"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("c", k, "grad %*% c", k, "Y_psi_s %*% t(c", k, "grad)"),
                                                              name = paste0("c", k, "Y_psi0")),
-                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -1300,19 +1301,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
-              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]],
+                                                values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s", "Y_psi0gs", "Y_psi11s",
                                                                           "Y_psi12s", "Y_psi1gs", "Y_psi22s", "Y_psi2gs", "Y_psiggs"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1323,7 +1324,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot, 0),",
                                                                     "cbind(0, 1, -1, 0),",
                                                                     "cbind(0, 1, 1, 0),",
@@ -1345,19 +1346,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 4, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:4, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:4, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "beta2TVC, c", k, "betagTVC))"),
                                                              name = paste0("c", k, "beta_s")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "func[1:3, 1:3] %*% c", k,
@@ -1369,23 +1370,23 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
-              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
+              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
                                       labels = paste0("c", k, "beta", "g", "TVC"))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]],
+                                                values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s", "Y_psi0gs", "Y_psi11s",
                                                                           "Y_psi12s", "Y_psi1gs", "Y_psi22s", "Y_psi2gs", "Y_psiggs"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1396,7 +1397,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot, 0),",
                                                                     "cbind(0, 1, -1, 0),",
                                                                     "cbind(0, 1, 1, 0),",
@@ -1429,7 +1430,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "X_mueta0"),
                                                              name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -1442,17 +1443,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s",
                                                                           "Y_psi11s", "Y_psi12s", "Y_psi22s"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1461,7 +1462,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot),",
                                                                     "cbind(0, 1, -1),",
@@ -1476,18 +1477,18 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi02s, c", k, "Y_psi12s, c", k, "Y_psi22s))"),
                                                              name = paste0("c", k, "Y_psi_s")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_s")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_s")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "func %*% c", k,
                                                                     "Y_alpha_s, c", k, "Y_knot)"),
                                                              name = paste0("c", k, "Y_alpha0")),
@@ -1497,17 +1498,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, 1] + c", k, "beta %*% c", k,
                                                                     "mux"), name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s",
                                                                           "Y_psi11s", "Y_psi12s", "Y_psi22s"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1516,7 +1517,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot),",
                                                                     "cbind(0, 1, -1),",
@@ -1531,15 +1532,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi02s, c", k, "Y_psi12s, c", k, "Y_psi22s))"),
                                                              name = paste0("c", k, "Y_psi_s")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxAlgebraFromString(paste0("rbind(c", k, "func %*% c", k,
                                                                     "Y_mean_s, c", k, "Y_knot)"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("c", k, "grad %*% c", k, "Y_psi_s %*% t(c", k, "grad)"),
                                                              name = paste0("c", k, "Y_psi0")),
-                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -1549,17 +1550,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s",
                                                                           "Y_psi11s", "Y_psi12s", "Y_psi22s"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1568,7 +1569,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot),",
                                                                     "cbind(0, 1, -1),",
@@ -1588,18 +1589,18 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "beta2TVC))"),
                                                              name = paste0("c", k, "beta_s")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "func %*% c", k,
@@ -1611,21 +1612,21 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, 1] + c", k, "beta %*% c", k,
                                                                     "BL_mean"), name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0s", "Y_mueta1s", "Y_mueta2s"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_knot"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00s", "Y_psi01s", "Y_psi02s",
                                                                           "Y_psi11s", "Y_psi12s", "Y_psi22s"))),
                                          mxPath(from = "eta0sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 1),
@@ -1634,7 +1635,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2sY", to = paste0(y_var, records), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records, "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(cbind(1, -c", k, "Y_knot, c", k, "Y_knot),",
                                                                     "cbind(0, 1, -1),",
@@ -1664,7 +1665,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "beta")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 [1:3, 1]+ c", k, "beta %*% c", k,
                                                                     "X_mueta0"), name = paste0("c", k, "Y_mean0")),
-                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = T))
+                                         TVC_info[[k]], GF_loadings[[k]], BETA, mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -1699,22 +1700,22 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                        mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1,
-                                              free = c(F, rep(T, length(records) - 2)), values = c(1, starts[[k]][[1]][[4]][-1]),
+                                              free = c(FALSE, rep(TRUE, length(records) - 2)), values = c(1, starts[[k]]$Y_starts$rel_rate[-1]),
                                               labels = paste0("c", k, "Y_rel_rate", 1:(length(records) - 1))),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_alpha0")),
@@ -1722,37 +1723,37 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                            name = paste0("c", k, "Y_psi_r")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                        mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                                values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                            name = paste0("c", k, "Y_mean0")),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                        mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1,
-                                              free = c(F, rep(T, length(records) - 2)), values = c(1, starts[[k]][[1]][[4]][-1]),
+                                              free = c(FALSE, rep(TRUE, length(records) - 2)), values = c(1, starts[[k]]$Y_starts$rel_rate[-1]),
                                               labels = paste0("c", k, "Y_rel_rate", 1:(length(records) - 1))),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_mean0")),
@@ -1760,12 +1761,12 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                            name = paste0("c", k, "Y_psi0")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]],
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -1775,22 +1776,22 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                        mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1,
-                                              free = c(F, rep(T, length(records) - 2)), values = c(1, starts[[k]][[1]][[4]][-1]),
+                                              free = c(FALSE, rep(TRUE, length(records) - 2)), values = c(1, starts[[k]]$Y_starts$rel_rate[-1]),
                                               labels = paste0("c", k, "Y_rel_rate", 1:(length(records) - 1))),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_alpha0")),
@@ -1803,42 +1804,42 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                            name = paste0("c", k, "X_psi0")),
                                        mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                        mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                   "rbind(c", k, "beta0TVC, c", k, "beta1TVC))"),
                                                            name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                            name = paste0("c", k, "BL_mean")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                            name = paste0("c", k, "Y_mean0")),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                   labels = paste0("c", k, "beta", p - 1, "TVC"))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
                                        mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                        mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1,
-                                              free = c(F, rep(T, length(records) - 2)), values = c(1, starts[[k]][[1]][[4]][-1]),
+                                              free = c(FALSE, rep(TRUE, length(records) - 2)), values = c(1, starts[[k]]$Y_starts$rel_rate[-1]),
                                               labels = paste0("c", k, "Y_rel_rate", 1:(length(records) - 1))),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                               labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1)"),
                                                            name = paste0("c", k, "Y_alpha0")),
@@ -1856,7 +1857,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                            name = paste0("c", k, "Y_mean0")),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -1869,15 +1870,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -1885,7 +1886,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_alpha0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1893,31 +1894,31 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                            name = paste0("c", k, "Y_psi_r")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                        mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                                values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                            name = paste0("c", k, "Y_mean0")),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -1925,7 +1926,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_mean0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1933,12 +1934,12 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                            name = paste0("c", k, "Y_psi0")),
                                        mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                              values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                              values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                        mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                              values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                              values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]],
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -1948,15 +1949,15 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
           if (!is.null(growth_TIC)){
             nTICs <- length(growth_TIC)
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                  labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -1964,7 +1965,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_alpha0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -1977,37 +1978,37 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                   "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                            name = paste0("c", k, "X_psi0")),
                                        mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                           paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                           paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                        mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                   "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                   "beta2TVC))"),
                                                            name = paste0("c", k, "beta")),
-                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                byrow = F, name = paste0("c", k, "mux")),
+                                       mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                byrow = FALSE, name = paste0("c", k, "mux")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                            name = paste0("c", k, "BL_mean")),
                                        mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                            name = paste0("c", k, "Y_mean0")),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
           else if (is.null(growth_TIC)){
             for (p in 1:Y_nGF){
-              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+              BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                   labels = paste0("c", k, "beta", p - 1, "TVC"))
             }
             class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                        manifestVars = manifests, latentVars = latents,
-                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]],
+                                       mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means,
                                               labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
                                        mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                              free = TRUE, values = starts[[k]][[1]][[2]],
+                                              free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                               labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                         "Y_psi11", "Y_psi12", "Y_psi22"))),
                                        mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2015,7 +2016,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                        mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                               labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                        mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                              free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                              free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                        mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                   "Y_mueta2)"), name = paste0("c", k, "Y_alpha0")),
                                        mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -2034,7 +2035,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                            name = paste0("c", k, "Y_mean0")),
                                        TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                        Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                       mxFitFunctionML(vector = T))
+                                       mxFitFunctionML(vector = TRUE))
           }
         }
       }
@@ -2048,20 +2049,20 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
-              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)))))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2070,7 +2071,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -2078,34 +2079,34 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2114,7 +2115,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -2122,12 +2123,12 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]],
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2137,20 +2138,20 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
-              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2159,7 +2160,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -2172,42 +2173,42 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c",
                                                                     k, "betagTVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
-              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF],
+              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF],
                                       labels = paste0("c", k, "beta", "g", "TVC"))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"),
                                                   name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE, values = starts[[k]][[1]][[2]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi0g",
                                                                           "Y_psi11", "Y_psi1g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2216,7 +2217,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE,
                                                 values = 0, labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi0g), ",
@@ -2235,7 +2236,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2248,23 +2249,23 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                          mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L1", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
@@ -2272,38 +2273,38 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:2, ] + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                          mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L1", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_mean0")),
@@ -2311,12 +2312,12 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi01, c", k, "Y_psi11))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]],
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2326,23 +2327,23 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                          mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L1", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
@@ -2355,43 +2356,43 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 2, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:2, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:2, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:2, ] + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:2],
+                                         mxPath(from = "one", to = latents[1:2], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:2],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][3],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[3],
                                                   labels = paste0("c", k, "Y_slp_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:2, 4)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:2, 4)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi11"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
                                          mxPath(from = "eta1Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L1", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]],
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals,
                                                 labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k,
                                                                     "Y_slp_ratio)"), name = paste0("c", k, "Y_alpha0")),
@@ -2409,7 +2410,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2424,19 +2425,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
-              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)))))
+              BETA[[Y_nGF]] <- mxPath(from = growth_TIC, to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)))))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2446,7 +2447,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -2455,34 +2456,34 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psi2g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 4, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:4, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:4, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2492,7 +2493,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -2501,12 +2502,12 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi0g, c", k, "Y_psi1g, c", k, "Y_psi2g, c", k, "Y_psigg))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]],
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2516,19 +2517,19 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
-              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF, ],
-                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+              BETA[[Y_nGF]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF, ],
+                                      labels = paste0("c", k, "beta", "g", c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2538,7 +2539,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -2552,42 +2553,42 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 4, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:4, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "betagTIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:4, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "betagTIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "beta2TVC, c", k, "betagTVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0 + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:(Y_nGF - 1)){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
-              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]][[4]][Y_nGF],
+              BETA[[Y_nGF]] <- mxPath(from = "lx1", to = latents[Y_nGF], arrows = 1, free = TRUE, values = starts[[k]]$beta[Y_nGF],
                                       labels = paste0("c", k, "beta", "g", "TVC"))
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:4], to = latents[1:4], arrows = 2, connect = "unique.pairs",
-                                                free = TRUE,values = starts[[k]][[1]][[2]],
+                                                free = TRUE,values = starts[[k]]$Y_starts$covMatrix,
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02", "Y_psi0g", "Y_psi11",
                                                                           "Y_psi12", "Y_psi1g", "Y_psi22", "Y_psi2g", "Y_psigg"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2597,7 +2598,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "deltag", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L3", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02, c", k, "Y_psi0g), ",
@@ -2617,7 +2618,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2630,17 +2631,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)))))
+                BETA[[p]] <- mxPath(from = growth_TIC, to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)))))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2648,7 +2649,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -2656,33 +2657,33 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                              name = paste0("c", k, "Y_psi_r")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, ] + c", k, "beta %*% c", k, "mux"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2690,7 +2691,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -2698,12 +2699,12 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "Y_psi02, c", k, "Y_psi12, c", k, "Y_psi22))"),
                                                              name = paste0("c", k, "Y_psi0")),
                                          mxPath(from = "one", to = paste0(TVC, records), arrows = 1, free = TRUE,
-                                                values = starts[[k]][[2]][[1]], labels = paste0("c", k, "TVC_m", records)),
+                                                values = starts[[k]]$TVC_starts$means, labels = paste0("c", k, "TVC_m", records)),
                                          mxPath(from = paste0(TVC, records), to = paste0(TVC, records), arrows = 2, free = TRUE,
-                                                values = starts[[k]][[2]][[2]], labels = paste0("c", k, "TVC_v", records)),
+                                                values = starts[[k]]$TVC_starts$covMatrix, labels = paste0("c", k, "TVC_v", records)),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]],
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }
@@ -2713,17 +2714,17 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
             if (!is.null(growth_TIC)){
               nTICs <- length(growth_TIC)
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p, ],
-                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", 1:length(growth_TIC)), "TVC")))
+                BETA[[p]] <- mxPath(from = c(growth_TIC, "lx1"), to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p, ],
+                                    labels = paste0("c", k, "beta", p - 1, c(paste0("TIC", seq_along(growth_TIC)), "TVC")))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2731,7 +2732,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -2744,39 +2745,39 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                                     "cbind(c", k, "X_psi01, c", k, "X_psi11))"),
                                                              name = paste0("c", k, "X_psi0")),
                                          mxMatrix("Full", 3, length(growth_TIC), free = TRUE,
-                                                  values = starts[[k]][[4]][1:3, 1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "beta0TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta1TIC", 1:length(growth_TIC)),
-                                                             paste0("c", k, "beta2TIC", 1:length(growth_TIC))),
-                                                  byrow = T, name = paste0("c", k, "beta_TIC")),
+                                                  values = starts[[k]]$beta[1:3, seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "beta0TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta1TIC", seq_along(growth_TIC)),
+                                                             paste0("c", k, "beta2TIC", seq_along(growth_TIC))),
+                                                  byrow = TRUE, name = paste0("c", k, "beta_TIC")),
                                          mxAlgebraFromString(paste0("cbind(c", k, "beta_TIC,",
                                                                     "rbind(c", k, "beta0TVC, c", k, "beta1TVC, c", k,
                                                                     "beta2TVC))"),
                                                              name = paste0("c", k, "beta")),
-                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]][[3]][[1]][1:length(growth_TIC)],
-                                                  labels = c(paste0("c", k, "mux", 1:length(growth_TIC))),
-                                                  byrow = F, name = paste0("c", k, "mux")),
+                                         mxMatrix("Full", length(growth_TIC), 1, free = TRUE, starts[[k]]$BL_starts$means[seq_along(growth_TIC)],
+                                                  labels = c(paste0("c", k, "mux", seq_along(growth_TIC))),
+                                                  byrow = FALSE, name = paste0("c", k, "mux")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "mux, c", k, "X_mueta0)"),
                                                              name = paste0("c", k, "BL_mean")),
                                          mxAlgebraFromString(paste0("c", k, "Y_alpha0[1:3, ] + c", k, "beta %*% c", k, "BL_mean"),
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
             else if (is.null(growth_TIC)){
               for (p in 1:Y_nGF){
-                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]][[4]][p],
+                BETA[[p]] <- mxPath(from = "lx1", to = latents[p], arrows = 1, free = TRUE, values = starts[[k]]$beta[p],
                                     labels = paste0("c", k, "beta", p - 1, "TVC"))
               }
               class.list[[k]] <- mxModel(name = paste0("Class", k), type = "RAM",
                                          manifestVars = manifests, latentVars = latents,
-                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]][[1]][[1]][1:3],
+                                         mxPath(from = "one", to = latents[1:3], arrows = 1, free = TRUE, values = starts[[k]]$Y_starts$means[1:3],
                                                 labels = paste0("c", k, c("Y_mueta0", "Y_mueta1", "Y_mueta2"))),
-                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]][[1]][[1]][4],
+                                         mxMatrix("Full", 1, 1, free = TRUE, values = starts[[k]]$Y_starts$means[4],
                                                   labels = paste0("c", k, "Y_acc_ratio"), name = paste0("c", k, "Y_mug")),
                                          mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs", free = TRUE,
-                                                values = starts[[k]][[1]][[2]][c(1:3, 5:6, 8)],
+                                                values = starts[[k]]$Y_starts$covMatrix[c(1:3, 5:6, 8)],
                                                 labels = paste0("c", k, c("Y_psi00", "Y_psi01", "Y_psi02",
                                                                           "Y_psi11", "Y_psi12", "Y_psi22"))),
                                          mxPath(from = "eta0Y", to = "ly1", arrows = 1, free = FALSE, values = 1),
@@ -2784,7 +2785,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                          mxPath(from = "eta2Y", to = paste0("dy", records[-1]), arrows = 1, free = FALSE, values = 0,
                                                 labels = paste0("c", k, "L2", records[-1], "[1,1]")),
                                          mxPath(from = paste0(y_var, records), to = paste0(y_var, records), arrows = 2,
-                                                free = TRUE, values = starts[[k]][[1]][[3]], labels = paste0("c", k, "Y_residuals")),
+                                                free = TRUE, values = starts[[k]]$Y_starts$residuals, labels = paste0("c", k, "Y_residuals")),
                                          mxAlgebraFromString(paste0("rbind(c", k, "Y_mueta0, c", k, "Y_mueta1, c", k, "Y_mueta2, c", k, "Y_acc_ratio)"),
                                                              name = paste0("c", k, "Y_alpha0")),
                                          mxAlgebraFromString(paste0("rbind(cbind(c", k, "Y_psi00, c", k, "Y_psi01, c", k, "Y_psi02), ",
@@ -2803,7 +2804,7 @@ getsub.TVC_l <- function(dat, nClass, t_var, records, y_var, curveFun, intrinsic
                                                              name = paste0("c", k, "Y_mean0")),
                                          TVC_info[[k]], GF_loadings[[k]], AddPara[[k]], BETA,
                                          Y_PATH_L_L[[k]], Y_PATH_SLP_L[[k]], Y_PATH_AUTO_L[[k]],
-                                         mxFitFunctionML(vector = T))
+                                         mxFitFunctionML(vector = TRUE))
             }
           }
         }

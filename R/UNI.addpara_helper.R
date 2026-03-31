@@ -32,6 +32,7 @@
 #' changes, and values of change-from-baseline for latent change score models.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxMatrix mxAlgebra diag2vec
 #'
@@ -59,10 +60,10 @@ getUNI.addpara <- function(dat, curveFun, intrinsic = NULL, t_var, records, grow
   m_Omega <- mxMatrix(type = "Full", nrow = length(m_time), ncol = length(m_lag),
                       values = m_Omega_val, free = FALSE, name = "Omega")
   if (curveFun %in% c("nonparametric", "NonP")){
-    rate_loads <- mxMatrix("Full", nrow = length(m_lag), ncol = 1, c(F, rep(T, length(m_lag) - 1)),
-                           values = c(1, starts[[1]][[4]][-1]),
-                           labels = paste0("Y_rel_rate", 1:length(m_lag)),
-                           byrow = T, name = "r_loads")
+    rate_loads <- mxMatrix("Full", nrow = length(m_lag), ncol = 1, c(FALSE, rep(TRUE, length(m_lag) - 1)),
+                           values = c(1, starts$Y_starts$rel_rate[-1]),
+                           labels = paste0("Y_rel_rate", seq_along(m_lag)),
+                           byrow = TRUE, name = "r_loads")
     status_loads <- mxAlgebra(Omega %*% r_loads, name = "s_loads")
     slp_m <- mxAlgebra(r_loads %*% Y_mean0[2, ], name = "Yslp_m")
     slp_v <- if ((is.null(decompose)||decompose == 0) && is.null(growth_TIC)) {

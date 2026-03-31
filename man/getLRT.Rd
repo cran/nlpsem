@@ -47,12 +47,15 @@ RMS_dat0$T9 <- RMS_dat0$T9 - baseT
 \donttest{
 # Fit bilinear spline growth model with random knot (intrinsically nonlinear model)
 BLS_LGCM_f <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-                      intrinsic = TRUE, records = 1:9, res_scale = 0.1)
+                      intrinsic = TRUE, records = 1:9)
 # Fit bilinear spline growth model with fix knot (non-intrinsically nonlinear model)
 BLS_LGCM_r <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-                      intrinsic = FALSE, records = 1:9, res_scale = 0.1)
+                      intrinsic = FALSE, records = 1:9)
 # Likelihood ratio test
 getLRT(full = BLS_LGCM_f@mxOutput, reduced = BLS_LGCM_r@mxOutput, boot = FALSE, rep = NA)
 }
 
+}
+\seealso{
+\code{\link{getSummary}}
 }

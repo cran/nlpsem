@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{An object of class "StatsOutput".}
 }
+\value{
+Called for its side effect of printing p values and confidence intervals.
+Returns the object invisibly.
+}
 \description{
 Method for printing p values and confidence intervals.
 }

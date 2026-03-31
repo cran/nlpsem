@@ -19,12 +19,13 @@
 #' the corresponding longitudinal variable.
 #' @param starts A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified initial
 #' values.
-#' @param res_scale A numeric vector with each element representing the scaling factor for the initial calculation of the residual
-#' variance. These values should be between \code{0} and \code{1}, exclusive. By default, this is \code{NULL}, as it is unnecessary
-#' when the user specifies the initial values using the \code{starts} argument.
-#' @param res_cor A numeric value or vector for user-specified residual correlation between any two longitudinal processes to calculate
-#' the corresponding initial value. By default, this is \code{NULL}, as it is unnecessary when the user specifies the initial values
-#' using the \code{starts} argument.
+#' @param res_scale An optional numeric vector with each element representing the scaling factor for the initial calculation of
+#' the residual variance. These values should be between \code{0} and \code{1}, exclusive. Default is \code{NULL}, in which case
+#' data-driven residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is applied as
+#' fallback.
+#' @param res_cor An optional numeric value or vector for user-specified residual correlation between any two longitudinal processes
+#' to calculate the corresponding initial value. Default is \code{NULL}, in which case data-driven residual correlation estimation
+#' is used. If data-driven estimation fails, a heuristic of \code{0.3} is applied as fallback.
 #' @param tries An integer specifying the number of additional optimization attempts. Default is \code{NULL}.
 #' @param OKStatus An integer (vector) specifying acceptable status codes for convergence. Default is \code{0}.
 #' @param jitterD A string specifying the distribution for jitter. Supported values are: \code{"runif"} (uniform
@@ -32,7 +33,8 @@
 #' @param loc A numeric value representing the location parameter of the jitter distribution. Default is \code{1}.
 #' @param scale A numeric value representing the scale parameter of the jitter distribution. Default is \code{0.25}.
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
-#' @param names A character vector specifying parameter names. Default is \code{NULL}.
+#' @param names A character vector specifying parameter names. Default is \code{NULL}, in which case
+#' meaningful names are automatically generated based on the model configuration.
 #'
 #' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
 #' \itemize{
@@ -45,7 +47,7 @@
 #' @references
 #' \itemize{
 #'   \item {Liu, J., & Perera, R.A. (2022). Assessing Mediational Processes Using Piecewise Linear Growth Curve Models with Individual
-#'   Measurement Occasions. Behavior Research Methods (Advance online publication). \doi{10.3758/s13428-022-01940-2}}
+#'   Measurement Occasions. Behavior Research Methods, 55(6), 3218-3240. \doi{10.3758/s13428-022-01940-2}}
 #'   \item {MacKinnon, D. P. (2008). Introduction to Statistical Mediation Analysis. Taylor & Francis Group/Lawrence Erlbaum Associates.}
 #'   \item {Cheong, J., Mackinnon, D. P., & Khoo, S. T. (2003). Investigation of Mediational Processes Using Parallel Process Latent
 #'   Growth Curve Modeling. Structural equation modeling: a multidisciplinary journal, 10(2), 238-262.
@@ -53,6 +55,8 @@
 #'   \item {Soest, T., & Hagtvet, K. A. (2011). Mediation Analysis in a Latent Growth Curve Modeling Framework. Structural equation modeling:
 #'   a multidisciplinary journal, 18(2), 289-314. \doi{10.1080/10705511.2011.557344}}
 #' }
+#'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getTVCmodel}}, \code{\link{getFigure}}
 #'
 #' @export
 #'
@@ -81,36 +85,16 @@
 #' set.seed(20191029)
 #' Med2_LGCM_LIN <- getMediation(
 #'   dat = RMS_dat0, t_var = rep("T", 2), y_var = "M", m_var = "R", x_type = "baseline",
-#'   x_var = "ex1", curveFun = "LIN", records = list(1:9, 1:9), res_scale = c(0.1, 0.1),
-#'   res_cor = 0.3
+#'   x_var = "ex1", curveFun = "LIN", records = list(1:9, 1:9)
 #'   )
 #'
 #' # Example 2: Longitudinal predictor, bilinear spline functional form
-#' ## Define parameter names
-#' paraMed3_BLS <- c(
-#'   "muetaX1", "muetaXr", "muetaX2", "mugX",
-#'   paste0("psi", c("X1X1", "X1Xr", "X1X2", "XrXr", "XrX2", "X2X2")),
-#'   "alphaM1", "alphaMr", "alphaM2", "mugM",
-#'   paste0("psi", c("M1M1", "M1Mr", "M1M2", "MrMr", "MrM2", "M2M2"), "_r"),
-#'   "alphaY1", "alphaYr", "alphaY2", "mugY",
-#'   paste0("psi", c("Y1Y1", "Y1Yr", "Y1Y2", "YrYr", "YrY2", "Y2Y2"), "_r"),
-#'   paste0("beta", c("X1Y1", "X1Yr", "X1Y2", "XrYr", "XrY2", "X2Y2",
-#'                    "X1M1", "X1Mr", "X1M2", "XrMr", "XrM2", "X2M2",
-#'                    "M1Y1", "M1Yr", "M1Y2", "MrYr", "MrY2", "M2Y2")),
-#'   "muetaM1", "muetaMr", "muetaM2", "muetaY1", "muetaYr", "muetaY2",
-#'   paste0("mediator", c("111", "11r", "112", "1rr", "1r2",
-#'                        "122", "rr2", "r22", "rrr", "222")),
-#'   paste0("total", c("11", "1r", "12", "rr", "r2", "22")),
-#'   "residualsX", "residualsM", "residualsY", "residualsMX", "residualsYX", "residualsYM"
-#'   )
-#'
 #' ## Fit model
 #' set.seed(20191029)
 #' Med3_LGCM_BLS <- getMediation(
 #'   dat = RMS_dat0, t_var = rep("T", 3), y_var = "S", m_var = "M", x_type = "longitudinal",
 #'   x_var = "R", curveFun = "bilinear spline", records = list(2:9, 1:9, 1:9),
-#'   res_scale = c(0.1, 0.1, 0.1), res_cor = c(0.3, 0.3), tries = 10, paramOut = TRUE,
-#'   names = paraMed3_BLS
+#'   tries = 10, paramOut = TRUE
 #'   )
 #' printTable(Med3_LGCM_BLS)
 #' }
@@ -121,15 +105,17 @@
 getMediation <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, records, starts = NULL, res_scale = NULL,
                          res_cor = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
                          paramOut = FALSE, names = NULL){
-  if (I(paramOut & is.null(names))){
-    stop("Please enter the original parameters if want to obtain them!")
-  }
-  if (I(any(res_scale <= 0) | any(res_scale >= 1))){
-    stop("Please enter a value between 0 and 1 (exclusive) for res_scale!")
-  }
-  if (!I(curveFun %in% c("linear", "LIN", "bilinear spline", "BLS"))){
+  dat <- as.data.frame(dat)
+  validate_paramOut(paramOut, names)
+  validate_res_scale(res_scale)
+  validate_res_cor(res_cor)
+  validate_curveFun(curveFun)
+  validate_x_type(x_type)
+  if (!(curveFun %in% c("linear", "LIN", "bilinear spline", "BLS"))) {
     stop("Longitudinal mediation model only allows for linear or bilinear spline functional form!")
   }
+  validate_columns(dat, t_var = t_var, y_var = y_var, records = records,
+                   m_var = m_var, x_var = x_var, x_type = x_type)
   ## Derive initial values for the parameters of interest if not specified by users
   if (is.null(starts)){
     starts <- getMED.initial(dat = dat, t_var = t_var, y_var = y_var, m_var = m_var, x_type = x_type,
@@ -142,14 +128,14 @@ getMediation <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, reco
                              x_var = x_var, curveFun = curveFun, records = records, res_cor = res_cor,
                              starts = starts)
   if (!is.null(tries)){
-    model0 <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
+    model <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
                        loc = loc, scale = scale)
-    model <- mxRun(model0)
   }
   else{
     model <- mxRun(model_mx)
   }
   if(paramOut){
+    if (is.null(names)) names <- .auto_names_MED(curveFun, x_type, x_var, m_var, y_var)
     MED_output <- getMED.output(model = model, y_var = y_var, m_var = m_var, x_type = x_type, x_var = x_var,
                                 curveFun = curveFun, names = names)
     model <- new("myMxOutput", mxOutput = model, Estimates = MED_output)

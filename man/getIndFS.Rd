@@ -48,15 +48,16 @@ RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
 # Fit bilinear spline latent growth curve model (fixed knots)
 LIN_LGCM <- getLGCM(
   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "linear",
-  intrinsic = FALSE, records = 1:9, growth_TIC = NULL, res_scale = 0.1
+  intrinsic = FALSE, records = 1:9, growth_TIC = NULL
 )
 getIndFS(model = LIN_LGCM@mxOutput, FS_type = "Regression")
 # Fit bilinear spline latent growth curve model (random knots) with time-invariant covariates for
 # mathematics development
 ## Fit the model
+set.seed(20191029)
 BLS_LGCM.TIC_f <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS",
                           intrinsic = TRUE, records = 1:9, growth_TIC = c("ex1", "ex2"),
-                          res_scale = 0.1)
+                          tries = 20)
 getIndFS(model = BLS_LGCM.TIC_f@mxOutput, FS_type = "Regression")
 }
 
@@ -68,4 +69,7 @@ getIndFS(model = BLS_LGCM.TIC_f@mxOutput, FS_type = "Regression")
   \item {Priestley, M. & Subba Rao, T. (1975). The Estimation of Factor Scores and Kalman Filtering For Discrete Parameter
   Stationary Processes. International Journal of Control, 21, 971-975. \doi{10.1080/00207177508922050}}
 }
+}
+\seealso{
+\code{\link{getEstimateStats}}
 }

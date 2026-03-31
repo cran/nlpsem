@@ -30,6 +30,8 @@
 #' Routledge. \doi{10.1080/10705510709336735}}
 #' }
 #'
+#' @seealso \code{\link{getMIX}}, \code{\link{getLatentKappa}}
+#'
 #' @export
 #'
 #' @examples
@@ -56,9 +58,9 @@
 #' # cluster TICs or growth TICs
 #' set.seed(20191029)
 #' MIX_BLS_LGCM_r <-  getMIX(
-#'   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
+#'   dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM",
 #'   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9, curveFun = "BLS",
-#'   intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3), growth_TIC = NULL, tries = 10
+#'   intrinsic = FALSE, growth_TIC = NULL, tries = 10
 #' )
 #' label1 <- getPosterior(
 #'   model = MIX_BLS_LGCM_r@mxOutput, nClass = 3, label = FALSE, cluster_TIC = NULL
@@ -69,7 +71,7 @@
 #' MIX_BLS_LGCM.TIC_r <-  getMIX(
 #'   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
 #'   cluster_TIC = c("gx1", "gx2"), y_var = "M", t_var = "T", records = 1:9,
-#'   curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
+#'   curveFun = "BLS", intrinsic = FALSE,
 #'   growth_TIC = c("ex1", "ex2"), tries = 10
 #' )
 #' label2 <- getPosterior(
@@ -88,7 +90,7 @@ getPosterior <- function(model, nClass, label = FALSE, cluster_TIC = NULL){
     return(mxEval(objective, subs[[num]]))
   }
   # Compute the likelihood for each submodel
-  likelihood <- sapply(1:length(names(subs)), getLIK)
+  likelihood <- sapply(seq_along(names(subs)), getLIK)
   # Initialize a probability matrix
   prob <- matrix(0, nrow = nrow(model$data$observed), ncol = nClass)
   # Calculate class probabilities based on model weights or time-invariant covariates that inform class formation
@@ -96,33 +98,39 @@ getPosterior <- function(model, nClass, label = FALSE, cluster_TIC = NULL){
     # Compute class probabilities based on model weights
     log_cp <- model$weights$values
     classProbs <- exp(log_cp)/sum(exp(log_cp))
-    # Compute posterior probabilities for each observation
-    for (i in 1:nrow(model$data$observed)){
-      prob[i, ] <- classProbs * likelihood[i, ]/sum(classProbs * likelihood[i, ])
-    }
+    # Compute posterior probabilities for each observation (vectorized)
+    unnorm <- sweep(likelihood, 2, classProbs, `*`)
+    prob <- unnorm / rowSums(unnorm)
   }
-  else if (!is.null(cluster_TIC)){
+  else {
     # Compute class probabilities based on time-invariant covariates that inform class formation
     oneX <- as.matrix(cbind(matrix(1, nrow = nrow(model$data$observed), ncol = 1),
                             model$data$observed[, cluster_TIC]))
     prop <- exp(oneX %*% t(model$classbeta$values))
     classProbs <- prop/apply(prop, 1, sum)
-    # Compute posterior probabilities for each observation
-    for (i in 1:nrow(model$data$observed)){
-      prob[i, ] <- classProbs[i, ] * likelihood[i, ]/sum(classProbs[i, ] * likelihood[i, ])
-    }
+    # Compute posterior probabilities for each observation (vectorized)
+    unnorm <- classProbs * likelihood
+    prob <- unnorm / rowSums(unnorm)
   }
   # Assign cluster membership based on maximum posterior probability
   membership <- apply(prob, 1, which.max)
   # Calculate entropy
-  entropy <- 1 - sum(-prob * log(prob))/(nrow(model$data$observed) * log(nClass))
+  if (nClass == 1) {
+    entropy <- NA
+  } else {
+    prob_safe <- pmax(prob, .Machine$double.xmin)
+    entropy <- 1 - sum(-prob_safe * log(prob_safe))/(nrow(model$data$observed) * log(nClass))
+  }
   if (label){
+    if (is.null(model$data$observed$class)) {
+      stop("Column 'class' not found in the dataset. Set label = FALSE or ensure the data contains a 'class' column.")
+    }
     true_labels <- model$data$observed$class
     # Calculate accuracy
     accuracy <- sum(true_labels == membership)/length(true_labels)
     postOut <- new("postOutput", prob = prob, membership = membership, entropy = entropy, accuracy = accuracy)
   }
-  else if (!label){
+  else {
     postOut <- new("postOutput", prob = prob, membership = membership, entropy = entropy)
   }
   return(postOut)

@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{An object of class "myMxOutput".}
 }
+\value{
+Called for its side effect of printing point estimates and standard errors.
+Returns the object invisibly.
+}
 \description{
 Method for printing point estimates and standard errors.
 }

@@ -1,57 +1,57 @@
-## ---- include = FALSE---------------------------------------------------------
+## ----include = FALSE----------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+has_data <- nzchar(system.file("extdata", "getMIX_examples.RData", package = "nlpsem"))
+knitr::opts_chunk$set(eval = has_data)
 
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 library(nlpsem)
 mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
 
-## ---- message = FALSE---------------------------------------------------------
+## ----message = FALSE----------------------------------------------------------
 load(system.file("extdata", "getMIX_examples.RData", package = "nlpsem"))
 
-## ---- message = FALSE, eval = FALSE-------------------------------------------
-#  # Load ECLS-K (2011) data
-#  data("RMS_dat")
-#  RMS_dat0 <- RMS_dat
-#  # Re-baseline the data so that the estimated initial status is for the
-#  # starting point of the study
-#  baseT <- RMS_dat0$T1
-#  RMS_dat0$T1 <- RMS_dat0$T1 - baseT
-#  RMS_dat0$T2 <- RMS_dat0$T2 - baseT
-#  RMS_dat0$T3 <- RMS_dat0$T3 - baseT
-#  RMS_dat0$T4 <- RMS_dat0$T4 - baseT
-#  RMS_dat0$T5 <- RMS_dat0$T5 - baseT
-#  RMS_dat0$T6 <- RMS_dat0$T6 - baseT
-#  RMS_dat0$T7 <- RMS_dat0$T7 - baseT
-#  RMS_dat0$T8 <- RMS_dat0$T8 - baseT
-#  RMS_dat0$T9 <- RMS_dat0$T9 - baseT
-#  # Standardize time-invariant covariates (TICs)
-#  ## ex1 and ex2 are standardized growth TICs in models
-#  RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
-#  RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
-#  ## gx1 and gx2 are standardized cluster TICs in models
-#  RMS_dat0$gx1 <- scale(RMS_dat0$INCOME)
-#  RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
-#  xstarts <- mean(baseT)
+## ----message = FALSE, eval = FALSE--------------------------------------------
+# # Load ECLS-K (2011) data
+# data("RMS_dat")
+# RMS_dat0 <- RMS_dat
+# # Re-baseline the data so that the estimated initial status is for the
+# # starting point of the study
+# baseT <- RMS_dat0$T1
+# RMS_dat0$T1 <- RMS_dat0$T1 - baseT
+# RMS_dat0$T2 <- RMS_dat0$T2 - baseT
+# RMS_dat0$T3 <- RMS_dat0$T3 - baseT
+# RMS_dat0$T4 <- RMS_dat0$T4 - baseT
+# RMS_dat0$T5 <- RMS_dat0$T5 - baseT
+# RMS_dat0$T6 <- RMS_dat0$T6 - baseT
+# RMS_dat0$T7 <- RMS_dat0$T7 - baseT
+# RMS_dat0$T8 <- RMS_dat0$T8 - baseT
+# RMS_dat0$T9 <- RMS_dat0$T9 - baseT
+# # Standardize time-invariant covariates (TICs)
+# ## ex1 and ex2 are standardized growth TICs in models
+# RMS_dat0$ex1 <- scale(RMS_dat0$Approach_to_Learning)
+# RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
+# ## gx1 and gx2 are standardized cluster TICs in models
+# RMS_dat0$gx1 <- scale(RMS_dat0$INCOME)
+# RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
+# xstarts <- mean(baseT)
 
-## ---- message = FALSE, eval = FALSE-------------------------------------------
-#  Math_BLS_LGCM1 <- getLGCM(
-#    dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-#    records = 1:9, res_scale = 0.1
-#    )
-#  Math_BLS_LGCM2 <- getMIX(
-#    dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM", y_var = "M",
-#    t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
-#    res_scale = list(0.3, 0.3)
-#  )
-#  set.seed(20191029)
-#  Math_BLS_LGCM3 <- getMIX(
-#    dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM", y_var = "M",
-#    t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
-#    res_scale = list(0.3, 0.3, 0.3), tries = 10
-#  )
+## ----message = FALSE, eval = FALSE--------------------------------------------
+# Math_BLS_LGCM1 <- getLGCM(
+#   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
+#   records = 1:9, tries = 10
+#   )
+# Math_BLS_LGCM2 <- getMIX(
+#   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM", y_var = "M",
+#   t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE, tries = 10
+# )
+# set.seed(20191029)
+# Math_BLS_LGCM3 <- getMIX(
+#   dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM", y_var = "M",
+#   t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE, tries = 10
+# )
 
 ## -----------------------------------------------------------------------------
 Figure1 <- getFigure(
@@ -78,24 +78,14 @@ show(Figure3)
 getSummary(model_list = list(Math_BLS_LGCM1@mxOutput, Math_BLS_LGCM2@mxOutput, Math_BLS_LGCM3@mxOutput),
            HetModels = TRUE)
 
-## ---- message = FALSE, eval = FALSE-------------------------------------------
-#  paraBLS_PLGCM.r <- c(
-#    "Y_mueta0", "Y_mueta1", "Y_mueta2", "Y_knot",
-#    paste0("Y_psi", c("00", "01", "02", "11", "12", "22")), "Y_res",
-#    "Z_mueta0", "Z_mueta1", "Z_mueta2", "Z_knot",
-#    paste0("Z_psi", c("00", "01", "02", "11", "12", "22")), "Z_res",
-#    paste0("YZ_psi", c("00", "10", "20", "01", "11", "21", "02", "12", "22")),
-#    "YZ_res"
-#    )
-#  set.seed(20191029)
-#  RM_BLS_PLGCM3 <- getMIX(
-#    dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "MGM",
-#    cluster_TIC = c("gx1", "gx2"), t_var = c("T", "T"), y_var = c("R", "M"),
-#    curveFun = "BLS", intrinsic = FALSE, records = list(1:9, 1:9),
-#    res_scale = list(c(0.3, 0.3), c(0.3, 0.3), c(0.3, 0.3)),
-#    res_cor = list(0.3, 0.3, 0.3), y_model = "LGCM", tries = 10, paramOut = TRUE,
-#    names = paraBLS_PLGCM.r
-#    )
+## ----message = FALSE, eval = FALSE--------------------------------------------
+# set.seed(20191029)
+# RM_BLS_PLGCM3 <- getMIX(
+#   dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "MGM",
+#   cluster_TIC = c("gx1", "gx2"), t_var = c("T", "T"), y_var = c("R", "M"),
+#   curveFun = "BLS", intrinsic = FALSE, records = list(1:9, 1:9),
+#   y_model = "LGCM", tries = 10, paramOut = TRUE
+#   )
 
 ## -----------------------------------------------------------------------------
 Figure4 <- getFigure(

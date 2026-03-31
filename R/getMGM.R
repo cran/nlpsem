@@ -22,12 +22,13 @@
 #' @param y_model A string specifying how to fit the longitudinal outcome. Supported values are \code{"LGCM"} and \code{"LCSM"}.
 #' @param starts A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified initial
 #' values.
-#' @param res_scale A numeric vector with each element representing the scaling factor for the initial calculation of the residual
-#' variance. These values should be between \code{0} and \code{1}, exclusive. By default, this is \code{NULL}, as it is unnecessary
-#' when the user specifies the initial values using the \code{starts} argument.
-#' @param res_cor A numeric value or vector for user-specified residual correlation between any two longitudinal outcomes to calculate
-#' the corresponding initial value. By default, this is \code{NULL}, as it is unnecessary when the user specifies the initial values
-#' using the \code{starts} argument.
+#' @param res_scale An optional numeric vector with each element representing the scaling factor for the initial calculation of
+#' the residual variance. These values should be between \code{0} and \code{1}, exclusive. Default is \code{NULL}, in which case
+#' data-driven residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is applied as
+#' fallback.
+#' @param res_cor An optional numeric value or vector for user-specified residual correlation between any two longitudinal outcomes
+#' to calculate the corresponding initial value. Default is \code{NULL}, in which case data-driven residual correlation estimation
+#' is used. If data-driven estimation fails, a heuristic of \code{0.3} is applied as fallback.
 #' @param tries An integer specifying the number of additional optimization attempts. Default is \code{NULL}.
 #' @param OKStatus An integer (vector) specifying acceptable status codes for convergence. Default is \code{0}.
 #' @param jitterD A string specifying the distribution for jitter. Supported values are: \code{"runif"} (uniform
@@ -35,7 +36,8 @@
 #' @param loc A numeric value representing the location parameter of the jitter distribution. Default is \code{1}.
 #' @param scale A numeric value representing the scale parameter of the jitter distribution. Default is \code{0.25}.
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
-#' @param names A character vector specifying parameter names. Default is \code{NULL}.
+#' @param names A character vector specifying parameter names. Default is \code{NULL}, in which case
+#' meaningful names are automatically generated based on the model configuration.
 #'
 #' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
 #' \itemize{
@@ -48,11 +50,12 @@
 #' @references
 #' \itemize{
 #'   \item {Liu, J., & Perera, R. A. (2021). "Estimating Knots and Their Association in Parallel Bilinear Spline Growth Curve Models in
-#'   the Framework of Individual Measurement Occasions," Psychological Methods (Advance online publication).
-#'   \doi{10.1037/met0000309}}
+#'   the Framework of Individual Measurement Occasions," Psychological Methods, 27(5), 703-729. \doi{10.1037/met0000309}}
 #'   \item {Blozis, S. A. (2004). "Structured Latent Curve Models for the Study of Change in Multivariate Repeated Measures," Psychological
 #'   Methods, 9(3), 334-353. \doi{10.1037/1082-989X.9.3.334}}
 #' }
+#'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getMGroup}}, \code{\link{getMIX}}, \code{\link{getFigure}}
 #'
 #' @export
 #'
@@ -77,24 +80,15 @@
 #' # Fit linear multivariate latent growth curve model
 #' LIN_PLGCM_f <- getMGM(
 #'   dat = RMS_dat0, t_var = c("T", "T"), y_var = c("R", "M"), curveFun = "LIN",
-#'   intrinsic = FALSE, records = list(1:9, 1:9), y_model = "LGCM", res_scale = c(0.1, 0.1),
-#'   res_cor = 0.3
+#'   intrinsic = FALSE, records = list(1:9, 1:9), y_model = "LGCM"
 #'   )
 #' # Fit bilinear spline multivariate latent growth curve model (random knots)
-#' ## Define parameter names
-#' paraBLS_PLGCM.f <- c(
-#'   "Y_mueta0", "Y_mueta1", "Y_mueta2", "Y_knot",
-#'   paste0("Y_psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")), "Y_res",
-#'   "Z_mueta0", "Z_mueta1", "Z_mueta2", "Z_knot",
-#'   paste0("Z_psi", c("00", "01", "02", "0g", "11", "12", "1g", "22", "2g", "gg")), "Z_res",
-#'   paste0("YZ_psi", c(c("00", "10", "20", "g0", "01", "11", "21", "g1",
-#'                        "02", "12", "22", "g2", "0g", "1g", "2g", "gg"))),"YZ_res"
-#'   )
 #' ## Fit model
+#' set.seed(20191029)
 #' BLS_PLGCM_f <- getMGM(
 #'   dat = RMS_dat0, t_var = c("T", "T"), y_var = c("R", "M"), curveFun = "BLS", intrinsic = TRUE,
-#'   records = list(1:9, 1:9), y_model = "LGCM", res_scale = c(0.1, 0.1), res_cor = 0.3,
-#'   paramOut = TRUE, names = paraBLS_PLGCM.f
+#'   records = list(1:9, 1:9), y_model = "LGCM",
+#'   tries = 20, paramOut = TRUE
 #'   )
 #' printTable(BLS_PLGCM_f)
 #' }
@@ -105,38 +99,35 @@
 getMGM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, y_model, starts = NULL, res_scale = NULL,
                    res_cor = NULL, tries = NULL, OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25,
                    paramOut = FALSE, names = NULL){
-  if (I(paramOut & is.null(names))){
-    stop("Please enter the original parameters if want to obtain them!")
-  }
-  if (I(any(res_scale <= 0) | any(res_scale >= 1))){
-    stop("Please enter a value between 0 and 1 (exclusive) for res_scale!")
-  }
+  dat <- as.data.frame(dat)
+  validate_paramOut(paramOut, names)
+  validate_res_scale(res_scale)
+  validate_res_cor(res_cor)
+  validate_curveFun(curveFun)
   if (length(t_var) != length(y_var) || length(t_var) != length(records)) {
     stop("Lengths of t_var, y_var, and records must be equal!")
   }
-  if (I(intrinsic & curveFun %in% c("linear", "LIN", "quadratic", "QUAD", "nonparametric", "NonP"))){
-    stop("An intrinsic nonlinear function should be negative exponential, Jenss-Bayley, or bilinear spline!")
-  }
-  # Extract the first letter of each element in `y_var`, and generate the corresponding uppercase
-  y_var <- sapply(y_var, function(x) toupper(substr(x, 1, 1)))
+  validate_intrinsic(intrinsic, curveFun, model_type = "general")
+  validate_curveFun_ymodel(curveFun, y_model)
+  validate_columns(dat, t_var = t_var, y_var = y_var, records = records)
   ## Derive initial values for the parameters of interest if not specified by users
   if (is.null(starts)){
     starts <- getMULTI.initial(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, records = records,
-                               res_scale = res_scale, res_cor = res_cor)
+                               res_scale = res_scale, res_cor = res_cor, intrinsic = intrinsic)
   }
   ## Build up a multivariate latent growth curve model or latent change score model
   ### Obtain manifest and latent variables, paths of the longitudinal outcomes
   model_mx <- getMGM.mxModel(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, intrinsic = intrinsic,
                              records = records, y_model = y_model, starts = starts)
   if (!is.null(tries)){
-    model0 <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
+    model <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
                         loc = loc, scale = scale)
-    model <- mxRun(model0)
   }
   else{
     model <- mxRun(model_mx)
   }
   if(paramOut){
+    if (is.null(names)) names <- .auto_names_MGM(curveFun, intrinsic, y_var, records, y_model)
     MGM_output <- getMGM.output(model = model, y_var = y_var, records = records, curveFun = curveFun, y_model = y_model,
                                 names = names)
     model <- new("myMxOutput", mxOutput = model, Estimates = MGM_output)
@@ -146,4 +137,3 @@ getMGM <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, y_mod
   }
   return(model)
 }
-

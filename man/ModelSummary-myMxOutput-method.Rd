@@ -9,6 +9,10 @@
 \arguments{
 \item{object}{An object of class "myMxOutput".}
 }
+\value{
+Invisibly returns the summary of the MxModel object. Called primarily for its
+side effect of printing the model summary.
+}
 \description{
 Method for printing model summary of MxModel object.
 }

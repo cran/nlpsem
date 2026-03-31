@@ -30,6 +30,7 @@
 #' any).
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxEval mxSE diag2vec
 #'
@@ -158,9 +159,10 @@ getTVC.output <- function(model, curveFun, records, y_model, decompose, growth_T
   }
   else if (decompose != 0){
     X_slp_m.est <- X_slp_m.se <- rep(0, length(records) - 1)
-    for (j in records[-1]){
-      X_slp_m.est[j - 1] <- mxEvalByName(paste0("X_abs_rate", j), model)
-      X_slp_m.se[j - 1] <- mxSE(paste0("X_abs_rate", j), model, forceName = T)
+    for (idx in seq_along(records[-1])){
+      j <- records[-1][idx]
+      X_slp_m.est[idx] <- mxEvalByName(paste0("X_abs_rate", j), model)
+      X_slp_m.se[idx] <- mxSE(paste0("X_abs_rate", j), model, forceName = TRUE)
     }
     if (y_model == "LGCM"){
       if (!is.null(growth_TIC)){
@@ -323,6 +325,16 @@ getTVC.output <- function(model, curveFun, records, y_model, decompose, growth_T
                               mxSE(Ychg_bl_m, model), diag(mxSE(Ychg_bl_v, model))), 4)
         }
       }
+    }
+  }
+  # Safety net: ensure names and estimates have matching length
+  if (length(names) != length(model.est)){
+    warning("Number of parameter names (", length(names), ") does not match number of estimates (",
+            length(model.est), "). Auto-padding with generic labels.")
+    if (length(names) < length(model.est)){
+      names <- c(names, paste0("param_", seq(length(names) + 1, length(model.est))))
+    } else {
+      names <- names[seq_len(length(model.est))]
     }
   }
   estimate_out <- data.frame(Name = names, Estimate = model.est, SE = model.se)

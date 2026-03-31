@@ -3,7 +3,7 @@
 \docType{class}
 \name{myMxOutput-class}
 \alias{myMxOutput-class}
-\title{Standard Methods (S4) for the package}
+\title{S4 Class for optimized MxModel and point estimates with standard errors (when applicable)}
 \description{
 S4 Class for the output structure for estimate functions.
 }

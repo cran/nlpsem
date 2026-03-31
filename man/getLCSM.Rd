@@ -46,9 +46,9 @@ variability of growth factors if any. Default is \code{NULL}, indicating no grow
 \item{starts}{A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified
 initial values.}
 
-\item{res_scale}{A numeric value representing the scaling factor for the initial calculation of the residual variance. This
-value should be between \code{0} and \code{1}, exclusive. By default, this is \code{NULL}, as it is unnecessary when the
-user specifies the initial values using the \code{starts} argument.}
+\item{res_scale}{An optional numeric value representing the scaling factor for the initial calculation of the residual
+variance. This value should be between \code{0} and \code{1}, exclusive. Default is \code{NULL}, in which case data-driven
+residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is applied as fallback.}
 
 \item{tries}{An integer specifying the number of additional optimization attempts. Default is \code{NULL}.}
 
@@ -63,7 +63,8 @@ distribution), \code{"rnorm"} (normal distribution), and \code{"rcauchy"} (Cauch
 
 \item{paramOut}{A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.}
 
-\item{names}{A character vector specifying parameter names. Default is \code{NULL}.}
+\item{names}{A character vector specifying parameter names. Default is \code{NULL}, in which case
+meaningful names are automatically generated based on the model configuration.}
 }
 \value{
 An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
@@ -103,7 +104,7 @@ RMS_dat0$ex2 <- scale(RMS_dat0$Attention_focus)
 ## Fit model
 NonP_LCSM <- getLCSM(
   dat = RMS_dat0, t_var = "T", y_var = "R", curveFun = "nonparametric",
-  intrinsic = FALSE, records = 1:9, res_scale = 0.1
+  intrinsic = FALSE, records = 1:9
   )
 }
 
@@ -111,7 +112,7 @@ NonP_LCSM <- getLCSM(
 \references{
 \itemize{
   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
-  Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
+  Occasions: A New Perspective on Growth Curves. Behavior Research Methods, 56(3), 1349-1375. \doi{10.3758/s13428-023-02097-2}}
   \item {Liu, J. (2022). "Jenss–Bayley Latent Change Score Model With Individual Ratio of the Growth Acceleration in the Framework
   of Individual Measurement Occasions." Journal of Educational and Behavioral Statistics, 47(5), 507–543.
   \doi{10.3102/10769986221099919}}
@@ -119,4 +120,7 @@ NonP_LCSM <- getLCSM(
   Acceleration Frameworks: Examining Velocity and Acceleration of Growth Trajectories." Multivariate Behavioral Research, 48(1),
   117-143. \doi{10.1080/00273171.2012.755111}}
 }
+}
+\seealso{
+\code{\link{getLGCM}}, \code{\link{getTVCmodel}}, \code{\link{getFigure}}
 }

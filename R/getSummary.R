@@ -12,6 +12,8 @@
 #' @return A data frame summarizing model fit statistics (number of parameters, estimated likelihood, AIC, BIC, etc.)
 #' for each model.
 #'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getMIX}}, \code{\link{getMGroup}}
+#'
 #' @export
 #'
 #' @examples
@@ -35,7 +37,7 @@
 #' ## Single group model
 #' BLS_LGCM1 <- getLGCM(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-#'   records = 1:9, res_scale = 0.1
+#'   records = 1:9
 #'   )
 #' getSummary(model_list = list(BLS_LGCM1@mxOutput), HetModels = FALSE)
 #' ## Mixture model with two latent classes
@@ -43,14 +45,14 @@
 #' BLS_LGCM2 <-  getMIX(
 #'   dat = RMS_dat0, prop_starts = c(0.45, 0.55), sub_Model = "LGCM", cluster_TIC = NULL,
 #'   y_var = "M", t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
-#'   res_scale = list(0.3, 0.3), growth_TIC = NULL, tries = 10
+#'   growth_TIC = NULL, tries = 10
 #'   )
 #' ## Mixture model with three latent classes
 #' set.seed(20191029)
 #' BLS_LGCM3 <-  getMIX(
-#'   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM", cluster_TIC = NULL,
+#'   dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM", cluster_TIC = NULL,
 #'   y_var = "M", t_var = "T", records = 1:9, curveFun = "BLS", intrinsic = FALSE,
-#'   res_scale = list(0.3, 0.3, 0.3), growth_TIC = NULL, tries = 10
+#'   growth_TIC = NULL, tries = 10
 #'   )
 #'
 #' getSummary(model_list = list(BLS_LGCM1@mxOutput, BLS_LGCM2@mxOutput, BLS_LGCM3@mxOutput),
@@ -66,7 +68,7 @@
 getSummary <- function(model_list, HetModels = FALSE){
   if (HetModels){
     output0 <- list()
-    for (model in 1:length(model_list)){
+    for (model in seq_along(model_list)){
       params <- omxGetParameters(model_list[[model]])
       res_indices <- grep("_res|_RES", names(params))
       res_names <- names(params)[res_indices]
@@ -97,8 +99,10 @@ getSummary <- function(model_list, HetModels = FALSE){
           }else{
             substring(model_list[[model]]$weightsV$labels[-1], 6)
           }
-          memebership <- getPosterior(model = model_list[[model]], nClass = nClass, cluster_TIC = cluster_TIC)@membership
-          prop <- paste0(table(memebership)/length(memebership) * 100, "%")
+          membership <- getPosterior(model = model_list[[model]], nClass = nClass, cluster_TIC = cluster_TIC)@membership
+          # Ensure all classes are represented in the proportion table (handle empty classes)
+          mem_table <- table(factor(membership, levels = 1:nClass))
+          prop <- paste0(mem_table/length(membership) * 100, "%")
         }
         output0[[model]] <- data.frame(Model = paste0("Model", model),
                                        No_Params = length(params),
@@ -127,11 +131,11 @@ getSummary <- function(model_list, HetModels = FALSE){
     names(output) <- str_replace_all(names(output), "_residuals_", "_res_")
     names(output) <- str_replace_all(names(output), "Prop_c", "%Class")
   }
-  else if (!HetModels){
+  else {
     # create an empty data frame with columns for the output
     output0 <- list()
     # loop over the models and extract the relevant information
-    for (model in 1:length(model_list)){
+    for (model in seq_along(model_list)){
       params <- omxGetParameters(model_list[[model]])
       res_indices <- grep("_res|_RES", names(params))
       res_names <- names(params)[res_indices]

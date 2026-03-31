@@ -29,39 +29,40 @@
 #' score model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_model, starts){
   y_var_L <- tolower(y_var)
   # Define manifest variables
   traj_list <- list()
-  for (traj in 1:length(y_var)){
+  for (traj in seq_along(y_var)){
     traj_list[[length(traj_list) + 1]] <- paste0(y_var[traj], records[[traj]])
   }
   manifests <- unlist(traj_list)
   # Define variances and covariance(s) of residuals
   RES <- COV <- list()
-  for (traj in 1:length(y_var)){
+  for (traj in seq_along(y_var)){
     RES[[traj]] <- mxPath(from = traj_list[[traj]], to = traj_list[[traj]], arrows = 2, free = TRUE,
-                          values = starts[[3]][traj, traj],
+                          values = starts$residuals[traj, traj],
                           labels = paste0(y_var[traj], "_residuals"))
   }
   for (traj_i in 1:(length(y_var) - 1)){
     for (traj_j in traj_i:(length(y_var) - 1)){
-      if (setequal(substr(traj_list[[traj_i]], 2, 2), substr(traj_list[[traj_j + 1]], 2, 2))){
+      common_records <- Reduce(intersect, list(records[[traj_i]], records[[traj_j + 1]]))
+      if (setequal(records[[traj_i]], records[[traj_j + 1]])){
         COV[[traj_i + traj_j - 1]] <- mxPath(from = traj_list[[traj_i]], to = traj_list[[traj_j + 1]],
-                                             arrows = 2, free = TRUE, values = starts[[3]][traj_i, traj_j + 1],
+                                             arrows = 2, free = TRUE, values = starts$residuals[traj_i, traj_j + 1],
                                              labels = paste0(y_var[traj_i], y_var[traj_j + 1], "_RES"))
       }
       else{
-        T_common <- Reduce(intersect, list(substr(traj_list[[traj_i]], 2, 2), substr(traj_list[[traj_j + 1]], 2, 2)))
-        COV[[traj_i + traj_j - 1]] <- mxPath(from = paste0(y_var[traj_i], T_common),
-                                             to = paste0(y_var[traj_j + 1], T_common),
-                                             arrows = 2, free = TRUE, values = starts[[3]][traj_i, traj_j + 1],
+        COV[[traj_i + traj_j - 1]] <- mxPath(from = paste0(y_var[traj_i], common_records),
+                                             to = paste0(y_var[traj_j + 1], common_records),
+                                             arrows = 2, free = TRUE, values = starts$residuals[traj_i, traj_j + 1],
                                              labels = paste0(y_var[traj_i], y_var[traj_j + 1], "_RES"))
       }
     }
   }
-  # Obtain factor loadigs for the specified trajectory model (either "LGCM" or "LCSM") and functional form
+  # Obtain factor loadings for the specified trajectory model (either "LGCM" or "LCSM") and functional form
   GF_loadings <- getMULTI.loadings(y_model = y_model, t_var = t_var, y_var = y_var, curveFun = curveFun,
                                    intrinsic = intrinsic, records = records)
   if (y_model == "LGCM"){
@@ -72,9 +73,9 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
       mean_L <- psi_L <- list()
       gf_var_label <- gf_cov_label <- list()
       psi_btw_L <- list()
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1"), y_var[traj]),
-                                  arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:2],
+                                  arrows = 1, free = TRUE, values = starts$means[[traj]][1:2],
                                   labels = paste0(y_var[traj], c("_mueta0", "_mueta1")))
         GF_LOADINGS[[traj]] <- list(mxPath(from = paste0("eta0", y_var[traj]), to = traj_list[[traj]],
                                            arrows = 1, free = FALSE, values = 1),
@@ -87,7 +88,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                     "cbind(", y_var[traj], "_psi01, ", y_var[traj], "_psi11))"),
                                              name = paste0(y_var[traj], "_psi0"))
         gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "01", "11")),
-                                       byrow = T, nrow = 2, ncol = 2)
+                                       byrow = TRUE, nrow = 2, ncol = 2)
       }
       for (traj_i in 1:(length(y_var) - 1)){
         for (traj_j in traj_i:(length(y_var) - 1)){
@@ -95,10 +96,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                          "cbind(", y_var[traj_i], y_var[traj_j + 1], "_psi10, ", y_var[traj_i], y_var[traj_j + 1], "_psi11))"),
                                                                   name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
           gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi", c("00", "01", "10", "11")),
-                                                        byrow = T, nrow = 2, ncol = 2)
+                                                        byrow = TRUE, nrow = 2, ncol = 2)
         }
       }
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         multi_label[((traj - 1) * 2 + 1):((traj - 1) * 2 + 2), ((traj - 1) * 2 + 1):((traj - 1) * 2 + 2)] <- gf_var_label[[traj]]
       }
       for (traj_i in 1:(length(y_var) - 1)){
@@ -110,7 +111,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                           manifestVars = manifests, latentVars = latents,
                           mxData(observed = dat, type = "raw"),
                           mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs",
-                                 free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                 free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                  labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                           GF_loadings, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
     }
@@ -121,9 +122,9 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
       mean_L <- psi_L <- list()
       gf_var_label <- gf_cov_label <- list()
       psi_btw_L <- list()
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1", "eta2"), y_var[traj]),
-                                  arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                  arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                   labels = paste0(y_var[traj], c("_mueta0", "_mueta1", "_mueta2")))
         GF_LOADINGS[[traj]] <- list(mxPath(from = paste0("eta0", y_var[traj]), to = traj_list[[traj]],
                                            arrows = 1, free = FALSE, values = 1),
@@ -145,7 +146,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                              name = paste0(y_var[traj], "_psi0"))
         gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi",
                                               c("00", "01", "02", "01", "11", "12", "02", "12", "22")),
-                                       byrow = T, nrow = 3, ncol = 3)
+                                       byrow = TRUE, nrow = 3, ncol = 3)
       }
       for (traj_i in 1:(length(y_var) - 1)){
         for (traj_j in traj_i:(length(y_var) - 1)){
@@ -161,10 +162,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                   name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
           gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                c("00", "01", "02", "10", "11", "12", "20", "21", "22")),
-                                                        byrow = T, nrow = 3, ncol = 3)
+                                                        byrow = TRUE, nrow = 3, ncol = 3)
         }
       }
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <- gf_var_label[[traj]]
       }
       for (traj_i in 1:(length(y_var) - 1)){
@@ -176,7 +177,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                           manifestVars = manifests, latentVars = latents,
                           mxData(observed = dat, type = "raw"),
                           mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs",
-                                 free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                 free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                  labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                           GF_loadings, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
     }
@@ -188,11 +189,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:2],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:2],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1")))
-          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][3],
+          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][3],
                                      labels = paste0(y_var[traj], "_slp_ratio"),
                                      name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -215,7 +216,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi",
                                                 c("00", "01", "0g", "01", "11", "1g", "0g", "1g", "gg")),
-                                         byrow = T, nrow = 3, ncol = 3)
+                                         byrow = TRUE, nrow = 3, ncol = 3)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -231,10 +232,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                     name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00", "01", "0g", "10", "11", "1g", "g0", "g1", "gg")),
-                                                          byrow = T, nrow = 3, ncol = 3)
+                                                          byrow = TRUE, nrow = 3, ncol = 3)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <-
             gf_var_label[[traj]]
         }
@@ -248,7 +249,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             manifestVars = manifests, latentVars = latents,
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs",
-                                   free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                   free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
       }
@@ -259,11 +260,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:2],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:2],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1")))
-          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][3],
+          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][3],
                                      labels = paste0(y_var[traj], "_slp_ratio"),
                                      name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -278,7 +279,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                       "cbind(", y_var[traj], "_psi01, ", y_var[traj], "_psi11))"),
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "01", "11")),
-                                         byrow = T, nrow = 2, ncol = 2)
+                                         byrow = TRUE, nrow = 2, ncol = 2)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -288,10 +289,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                            y_var[traj_i], y_var[traj_j + 1], "_psi11))"),
                                                                     name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi", c("00", "01", "10", "11")),
-                                                          byrow = T, nrow = 2, ncol = 2)
+                                                          byrow = TRUE, nrow = 2, ncol = 2)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 2 + 1):((traj - 1) * 2 + 2), ((traj - 1) * 2 + 1):((traj - 1) * 2 + 2)] <-
             gf_var_label[[traj]]
         }
@@ -305,8 +306,8 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             manifestVars = manifests, latentVars = latents,
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs", free = TRUE,
-                                   values = t(starts[[2]][c(1:2, 4:5), c(1:2, 4:5)])[row(t(starts[[2]][c(1:2, 4:5), c(1:2, 4:5)])) >=
-                                                                                       col(t(starts[[2]][c(1:2, 4:5), c(1:2, 4:5)]))],
+                                   values = t(starts$covMatrix[c(1:2, 4:5), c(1:2, 4:5)])[row(t(starts$covMatrix[c(1:2, 4:5), c(1:2, 4:5)])) >=
+                                                                                       col(t(starts$covMatrix[c(1:2, 4:5), c(1:2, 4:5)]))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
       }
@@ -319,11 +320,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1", "eta2"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1", "_mueta2")))
-          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][4],
+          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][4],
                                     labels = paste0(y_var[traj], "_acc_ratio"),
                                     name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -351,7 +352,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "02", "0g", "01", "11", "12", "1g",
                                                                        "02", "12", "22", "2g", "0g", "1g", "2g", "gg")),
-                                         byrow = T, nrow = 4, ncol = 4)
+                                         byrow = TRUE, nrow = 4, ncol = 4)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -375,10 +376,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00", "01", "02", "0g", "10", "11", "12", "1g",
                                                                    "20", "21", "22", "2g", "g0", "g1", "g2", "gg")),
-                                                          byrow = T, nrow = 4, ncol = 4)
+                                                          byrow = TRUE, nrow = 4, ncol = 4)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 4 + 1):((traj - 1) * 4 + 4), ((traj - 1) * 4 + 1):((traj - 1) * 4 + 4)] <-
             gf_var_label[[traj]]
         }
@@ -392,7 +393,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             manifestVars = manifests, latentVars = latents,
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs",
-                                   free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                   free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
       }
@@ -403,11 +404,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1", "eta2"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1", "_mueta2")))
-          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][4],
+          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][4],
                                     labels = paste0(y_var[traj], "_acc_ratio"),
                                     name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -430,7 +431,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "02", "01", "11", "12",
                                                                        "02", "12", "22")),
-                                         byrow = T, nrow = 3, ncol = 3)
+                                         byrow = TRUE, nrow = 3, ncol = 3)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -447,10 +448,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00", "01", "02", "10", "11", "12",
                                                                    "20", "21", "22")),
-                                                          byrow = T, nrow = 3, ncol = 3)
+                                                          byrow = TRUE, nrow = 3, ncol = 3)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <-
             gf_var_label[[traj]]
         }
@@ -464,8 +465,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             manifestVars = manifests, latentVars = latents,
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs", free = TRUE,
-                                   values = t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)])[row(t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)])) >=
-                                                                                       col(t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)]))],
+                                   values = .multi_reduced_cov_starts(starts$covMatrix, n_traj = length(y_var)),
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
       }
@@ -478,11 +478,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         func_L <- grad_L <- mean_s_L <- psi_s_L <- mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_s_L <- psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0s", "eta1s", "eta2s"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                     labels = paste0(y_var[traj], c("_mueta0s", "_mueta1s", "_mueta2s")))
-          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][4],
+          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][4],
                                     labels = paste0(y_var[traj], "_knot"),
                                     name = paste0(y_var[traj], "_mug"))
           mean_s_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0s, ", y_var[traj], "_mueta1s, ",
@@ -502,7 +502,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
           func_L[[length(func_L) + 1]] <- mxAlgebraFromString(paste0("rbind(cbind(1, -", y_var[traj], "_mug, ", y_var[traj], "_mug, 0), ",
                                                                      "cbind(0, 1, -1, 0), ", "cbind(0, 1, 1, 0)", ", cbind(0, 0, 0, 1))"),
                                                               name = paste0("func", y_var[traj]))
-          grad_L[[length(grad_L) + 1]] <- mxAlgebraFromString(paste0("rbind(cbind(1, -", y_var[traj], "_mug, ", y_var[traj], "_mug, 0), ",
+          grad_L[[length(grad_L) + 1]] <- mxAlgebraFromString(paste0("rbind(cbind(1, -", y_var[traj], "_mug, ", y_var[traj], "_mug, ", y_var[traj], "_mueta2s - ", y_var[traj], "_mueta1s), ",
                                                                      "cbind(0, 1, -1, 0), ", "cbind(0, 1, 1, 0)", ", cbind(0, 0, 0, 1))"),
                                                               name = paste0("grad", y_var[traj]))
           psi_s_L[[traj]] <- mxAlgebraFromString(paste0("rbind(cbind(", y_var[traj], "_psi00s, ", y_var[traj], "_psi01s, ",
@@ -521,7 +521,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00s", "01s", "02s", "0gs", "01s", "11s", "12s", "1gs",
                                                                        "02s", "12s", "22s", "2gs", "0gs", "1gs", "2gs", "ggs")),
-                                         byrow = T, nrow = 4, ncol = 4)
+                                         byrow = TRUE, nrow = 4, ncol = 4)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -549,10 +549,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00s", "01s", "02s", "0gs", "10s", "11s", "12s", "1gs",
                                                                    "20s", "21s", "22s", "2gs", "g0s", "g1s", "g2s", "ggs")),
-                                                          byrow = T, nrow = 4, ncol = 4)
+                                                          byrow = TRUE, nrow = 4, ncol = 4)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 4 + 1):((traj - 1) * 4 + 4), ((traj - 1) * 4 + 1):((traj - 1) * 4 + 4)] <-
             gf_var_label[[traj]]
         }
@@ -566,7 +566,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             manifestVars = manifests, latentVars = latents,
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs",
-                                   free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                   free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, GAMMA, func_L, grad_L, mean_s_L, psi_s_L, psi_btw_s_L,
                             GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
@@ -578,11 +578,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         func_L <- grad_L <- mean_s_L <- psi_s_L <- mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_s_L <- psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0s", "eta1s", "eta2s"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                     labels = paste0(y_var[traj], c("_mueta0s", "_mueta1s", "_mueta2s")))
-          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][4],
+          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][4],
                                     labels = paste0(y_var[traj], "_knot"),
                                     name = paste0(y_var[traj], "_mug"))
           mean_s_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0s, ", y_var[traj], "_mueta1s, ",
@@ -617,7 +617,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00s", "01s", "02s", "01s", "11s", "12s",
                                                                        "02s", "12s", "22s")),
-                                         byrow = T, nrow = 3, ncol = 3)
+                                         byrow = TRUE, nrow = 3, ncol = 3)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -637,10 +637,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                     name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00s", "01s", "02s", "10s", "11s", "12s", "20s", "21s", "22s")),
-                                                          byrow = T, nrow = 3, ncol = 3)
+                                                          byrow = TRUE, nrow = 3, ncol = 3)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <-
             gf_var_label[[traj]]
         }
@@ -654,8 +654,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             manifestVars = manifests, latentVars = latents,
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents, to = latents, arrows = 2, connect = "unique.pairs", free = TRUE,
-                                   values = t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)])[row(t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)])) >=
-                                                                                       col(t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)]))],
+                                   values = .multi_reduced_cov_starts(starts$covMatrix, n_traj = length(y_var)),
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, GAMMA, func_L, grad_L, mean_s_L, psi_s_L, psi_btw_s_L,
                             GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L)
@@ -668,12 +667,12 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                 t_var = t_var, records = records, starts = starts)
     # Define latent variables in addition to growth factors
     L_list <- D_list <- list()
-    for (traj in 1:length(y_var)){
+    for (traj in seq_along(y_var)){
       L_list[[traj]] <- paste0("l", y_var_L[traj], records[[traj]])
       D_list[[traj]] <- paste0("d", y_var_L[traj], records[[traj]][-1])
     }
     PATH_L_L <- PATH_SLP_L <- PATH_AUTO_L <- list()
-    for (traj in 1:length(y_var)){
+    for (traj in seq_along(y_var)){
       # Define paths from latent true scores to observed scores
       PATH_L_L[[traj]] <- mxPath(from = paste0("l", y_var_L[traj], records[[traj]]),
                                  to = paste0(y_var[[traj]], records[[traj]]), arrows = 1, free = FALSE, values = 1)
@@ -695,17 +694,17 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
       mean_L <- psi_L <- list()
       gf_var_label <- gf_cov_label <- list()
       psi_btw_L <- list()
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1"), y_var[traj]),
-                                  arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:2],
+                                  arrows = 1, free = TRUE, values = starts$means[[traj]][1:2],
                                   labels = paste0(y_var[traj], c("_mueta0", "_mueta1")))
         GF_LOADINGS[[traj]] <- list(mxPath(from = paste0("eta0", y_var[traj]),
                                            to = paste0("l", y_var_L[traj], records[[traj]][1]),
                                            arrows = 1, free = FALSE, values = 1),
                                     mxPath(from = paste0("eta1", y_var[traj]),
                                            to = paste0("d", y_var_L[traj], records[[traj]][-1]),
-                                           arrows = 1, free = c(F, rep(T, length(records[[traj]]) - 2)),
-                                           values = c(1, starts[[4]][[traj]][-1]),
+                                           arrows = 1, free = c(FALSE, rep(TRUE, length(records[[traj]]) - 2)),
+                                           values = c(1, starts$rel_rate[[traj]][-1]),
                                            labels = paste0(y_var[traj], "_rel_rate",
                                                            1:(length(records[[traj]]) - 1))))
         mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1)"),
@@ -714,7 +713,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                     "cbind(", y_var[traj], "_psi01, ", y_var[traj], "_psi11))"),
                                              name = paste0(y_var[traj], "_psi0"))
         gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "01", "11")),
-                                       byrow = T, nrow = 2, ncol = 2)
+                                       byrow = TRUE, nrow = 2, ncol = 2)
       }
       for (traj_i in 1:(length(y_var) - 1)){
         for (traj_j in traj_i:(length(y_var) - 1)){
@@ -722,10 +721,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                          "cbind(", y_var[traj_i], y_var[traj_j + 1], "_psi10, ", y_var[traj_i], y_var[traj_j + 1], "_psi11))"),
                                                                   name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
           gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi", c("00", "01", "10", "11")),
-                                                        byrow = T, nrow = 2, ncol = 2)
+                                                        byrow = TRUE, nrow = 2, ncol = 2)
         }
       }
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         multi_label[((traj - 1) * 2 + 1):((traj - 1) * 2 + 2), ((traj - 1) * 2 + 1):((traj - 1) * 2 + 2)] <- gf_var_label[[traj]]
       }
       for (traj_i in 1:(length(y_var) - 1)){
@@ -737,7 +736,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                           manifestVars = manifests, latentVars = latents,
                           mxData(observed = dat, type = "raw"),
                           mxPath(from = latents[1:(length(y_var) * 2)], to = latents[1:(length(y_var) * 2)],
-                                 arrows = 2, connect = "unique.pairs", free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                 arrows = 2, connect = "unique.pairs", free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                  labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                           GF_loadings, AddPara, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L,
                           PATH_L_L, PATH_SLP_L, PATH_AUTO_L)
@@ -750,9 +749,9 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
       mean_L <- psi_L <- list()
       gf_var_label <- gf_cov_label <- list()
       psi_btw_L <- list()
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1", "eta2"), y_var[traj]),
-                                  arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                  arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                   labels = paste0(y_var[traj], c("_mueta0", "_mueta1", "_mueta2")))
         GF_LOADINGS[[traj]] <- list(mxPath(from = paste0("eta0", y_var[traj]),
                                            to = paste0("l", y_var_L[traj], records[[traj]][1]),
@@ -776,7 +775,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                              name = paste0(y_var[traj], "_psi0"))
         gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi",
                                               c("00", "01", "02", "01", "11", "12", "02", "12", "22")),
-                                       byrow = T, nrow = 3, ncol = 3)
+                                       byrow = TRUE, nrow = 3, ncol = 3)
       }
       for (traj_i in 1:(length(y_var) - 1)){
         for (traj_j in traj_i:(length(y_var) - 1)){
@@ -792,10 +791,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                   name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
           gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                c("00", "01", "02", "10", "11", "12", "20", "21", "22")),
-                                                        byrow = T, nrow = 3, ncol = 3)
+                                                        byrow = TRUE, nrow = 3, ncol = 3)
         }
       }
-      for (traj in 1:length(y_var)){
+      for (traj in seq_along(y_var)){
         multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <- gf_var_label[[traj]]
       }
       for (traj_i in 1:(length(y_var) - 1)){
@@ -807,7 +806,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                           manifestVars = manifests, latentVars = latents,
                           mxData(observed = dat, type = "raw"),
                           mxPath(from = latents[1:(length(y_var) * 3)], to = latents[1:(length(y_var) * 3)],
-                                 arrows = 2, connect = "unique.pairs", free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                 arrows = 2, connect = "unique.pairs", free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                  labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                           GF_loadings, AddPara, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L, psi_btw_L,
                           PATH_L_L, PATH_SLP_L, PATH_AUTO_L)
@@ -821,11 +820,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:2],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:2],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1")))
-          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][3],
+          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][3],
                                      labels = paste0(y_var[traj], "_slp_ratio"),
                                      name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -851,7 +850,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi",
                                                 c("00", "01", "0g", "01", "11", "1g", "0g", "1g", "gg")),
-                                         byrow = T, nrow = 3, ncol = 3)
+                                         byrow = TRUE, nrow = 3, ncol = 3)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -867,10 +866,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                     name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00", "01", "0g", "10", "11", "1g", "g0", "g1", "gg")),
-                                                          byrow = T, nrow = 3, ncol = 3)
+                                                          byrow = TRUE, nrow = 3, ncol = 3)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <-
             gf_var_label[[traj]]
         }
@@ -885,7 +884,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents[1:(length(y_var) * 3)], to = latents[1:(length(y_var) * 3)],
                                    arrows = 2, connect = "unique.pairs", free = TRUE,
-                                   values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                   values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, AddPara, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L,
                             psi_btw_L, PATH_L_L, PATH_SLP_L, PATH_AUTO_L)
@@ -898,11 +897,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:2],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:2],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1")))
-          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][3],
+          GAMMA[[traj]]  <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][3],
                                      labels = paste0(y_var[traj], "_slp_ratio"),
                                      name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -919,7 +918,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                       "cbind(", y_var[traj], "_psi01, ", y_var[traj], "_psi11))"),
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "01", "11")),
-                                         byrow = T, nrow = 2, ncol = 2)
+                                         byrow = TRUE, nrow = 2, ncol = 2)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -929,10 +928,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                                            y_var[traj_i], y_var[traj_j + 1], "_psi11))"),
                                                                     name = paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"))
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi", c("00", "01", "10", "11")),
-                                                          byrow = T, nrow = 2, ncol = 2)
+                                                          byrow = TRUE, nrow = 2, ncol = 2)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 2 + 1):((traj - 1) * 2 + 2), ((traj - 1) * 2 + 1):((traj - 1) * 2 + 2)] <-
             gf_var_label[[traj]]
         }
@@ -947,8 +946,8 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents[1:(length(y_var) * 2)], to = latents[1:(length(y_var) * 2)],
                                    arrows = 2, connect = "unique.pairs", free = TRUE,
-                                   values = t(starts[[2]][c(1:2, 4:5), c(1:2, 4:5)])[row(t(starts[[2]][c(1:2, 4:5), c(1:2, 4:5)])) >=
-                                                                                       col(t(starts[[2]][c(1:2, 4:5), c(1:2, 4:5)]))],
+                                   values = t(starts$covMatrix[c(1:2, 4:5), c(1:2, 4:5)])[row(t(starts$covMatrix[c(1:2, 4:5), c(1:2, 4:5)])) >=
+                                                                                       col(t(starts$covMatrix[c(1:2, 4:5), c(1:2, 4:5)]))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, AddPara, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L,
                             psi_btw_L, PATH_L_L, PATH_SLP_L, PATH_AUTO_L)
@@ -963,11 +962,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1", "eta2"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1", "_mueta2")))
-          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][4],
+          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][4],
                                     labels = paste0(y_var[traj], "_acc_ratio"),
                                     name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -997,7 +996,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "02", "0g", "01", "11", "12", "1g",
                                                                        "02", "12", "22", "2g", "0g", "1g", "2g", "gg")),
-                                         byrow = T, nrow = 4, ncol = 4)
+                                         byrow = TRUE, nrow = 4, ncol = 4)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -1021,10 +1020,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00", "01", "02", "0g", "10", "11", "12", "1g",
                                                                    "20", "21", "22", "2g", "g0", "g1", "g2", "gg")),
-                                                          byrow = T, nrow = 4, ncol = 4)
+                                                          byrow = TRUE, nrow = 4, ncol = 4)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 4 + 1):((traj - 1) * 4 + 4), ((traj - 1) * 4 + 1):((traj - 1) * 4 + 4)] <-
             gf_var_label[[traj]]
         }
@@ -1039,7 +1038,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents[1:(length(y_var) * 4)], to = latents[1:(length(y_var) * 4)],
                                    arrows = 2, connect = "unique.pairs",
-                                   free = TRUE, values = t(starts[[2]])[row(t(starts[[2]])) >= col(t(starts[[2]]))],
+                                   free = TRUE, values = t(starts$covMatrix)[row(t(starts$covMatrix)) >= col(t(starts$covMatrix))],
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, AddPara, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L,
                             psi_btw_L, PATH_L_L, PATH_SLP_L, PATH_AUTO_L)
@@ -1052,11 +1051,11 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
         mean_L <- psi_L <- list()
         gf_var_label <- gf_cov_label <- list()
         psi_btw_L <- list()
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           GF_MEAN[[traj]] <- mxPath(from = "one", to = paste0(c("eta0", "eta1", "eta2"), y_var[traj]),
-                                    arrows = 1, free = TRUE, values = starts[[1]][[traj]][1:3],
+                                    arrows = 1, free = TRUE, values = starts$means[[traj]][1:3],
                                     labels = paste0(y_var[traj], c("_mueta0", "_mueta1", "_mueta2")))
-          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[traj]][4],
+          GAMMA[[traj]] <- mxMatrix("Full", 1, 1, free = TRUE, values = starts$means[[traj]][4],
                                     labels = paste0(y_var[traj], "_acc_ratio"),
                                     name = paste0(y_var[traj], "_mug"))
           mean_L[[traj]] <- mxAlgebraFromString(paste0("rbind(", y_var[traj], "_mueta0, ", y_var[traj], "_mueta1, ",
@@ -1081,7 +1080,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                                                name = paste0(y_var[traj], "_psi0"))
           gf_var_label[[traj]] <- matrix(paste0(y_var[traj], "_psi", c("00", "01", "02", "01", "11", "12",
                                                                        "02", "12", "22")),
-                                         byrow = T, nrow = 3, ncol = 3)
+                                         byrow = TRUE, nrow = 3, ncol = 3)
         }
         for (traj_i in 1:(length(y_var) - 1)){
           for (traj_j in traj_i:(length(y_var) - 1)){
@@ -1098,10 +1097,10 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
             gf_cov_label[[traj_i + traj_j - 1]] <- matrix(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi",
                                                                  c("00", "01", "02", "10", "11", "12",
                                                                    "20", "21", "22")),
-                                                          byrow = T, nrow = 3, ncol = 3)
+                                                          byrow = TRUE, nrow = 3, ncol = 3)
           }
         }
-        for (traj in 1:length(y_var)){
+        for (traj in seq_along(y_var)){
           multi_label[((traj - 1) * 3 + 1):((traj - 1) * 3 + 3), ((traj - 1) * 3 + 1):((traj - 1) * 3 + 3)] <-
             gf_var_label[[traj]]
         }
@@ -1116,8 +1115,7 @@ getMGM.mxModel <- function(dat, t_var, y_var, curveFun, intrinsic, records, y_mo
                             mxData(observed = dat, type = "raw"),
                             mxPath(from = latents[1:(length(y_var) * 3)], to = latents[1:(length(y_var) * 3)],
                                    arrows = 2, connect = "unique.pairs", free = TRUE,
-                                   values = t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)])[row(t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)])) >=
-                                                                                       col(t(starts[[2]][c(1:3, 5:7), c(1:3, 5:7)]))],
+                                   values = .multi_reduced_cov_starts(starts$covMatrix, n_traj = length(y_var)),
                                    labels = t(multi_label)[row(t(multi_label)) >= col(t(multi_label))]),
                             GF_loadings, AddPara, GAMMA, GF_MEAN, GF_LOADINGS, RES, COV, mean_L, psi_L,
                             psi_btw_L, PATH_L_L, PATH_SLP_L, PATH_AUTO_L)

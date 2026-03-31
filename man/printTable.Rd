@@ -9,6 +9,32 @@ printTable(object)
 \arguments{
 \item{object}{An object of the appropriate class.}
 }
+\value{
+Called primarily for its side effect of printing formatted output. Returns
+the object invisibly.
+}
 \description{
-Generic function for printing output that are tables.
+Generic function for printing output as tables.
+}
+\examples{
+\donttest{
+mxOption(model = NULL, key = "Default optimizer", "CSOLNP", reset = FALSE)
+data("RMS_dat")
+RMS_dat0 <- RMS_dat
+baseT <- RMS_dat0$T1
+RMS_dat0$T1 <- RMS_dat0$T1 - baseT
+RMS_dat0$T2 <- RMS_dat0$T2 - baseT
+RMS_dat0$T3 <- RMS_dat0$T3 - baseT
+RMS_dat0$T4 <- RMS_dat0$T4 - baseT
+RMS_dat0$T5 <- RMS_dat0$T5 - baseT
+RMS_dat0$T6 <- RMS_dat0$T6 - baseT
+RMS_dat0$T7 <- RMS_dat0$T7 - baseT
+RMS_dat0$T8 <- RMS_dat0$T8 - baseT
+RMS_dat0$T9 <- RMS_dat0$T9 - baseT
+BLS_LGCM <- getLGCM(
+  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
+  records = 1:9, paramOut = TRUE
+)
+printTable(BLS_LGCM)
+}
 }

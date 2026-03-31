@@ -14,6 +14,8 @@
 #' @return A data frame containing the number of free parameters, estimated likelihood (-2ll), degrees of freedom, differences
 #' in log-likelihood and degrees of freedom, p-values, AIC, and BIC for both the full and reduced models.
 #'
+#' @seealso \code{\link{getSummary}}
+#'
 #' @export
 #'
 #' @examples
@@ -37,10 +39,10 @@
 #' \donttest{
 #' # Fit bilinear spline growth model with random knot (intrinsically nonlinear model)
 #' BLS_LGCM_f <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-#'                       intrinsic = TRUE, records = 1:9, res_scale = 0.1)
+#'                       intrinsic = TRUE, records = 1:9)
 #' # Fit bilinear spline growth model with fix knot (non-intrinsically nonlinear model)
 #' BLS_LGCM_r <- getLGCM(dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "bilinear spline",
-#'                       intrinsic = FALSE, records = 1:9, res_scale = 0.1)
+#'                       intrinsic = FALSE, records = 1:9)
 #' # Likelihood ratio test
 #' getLRT(full = BLS_LGCM_f@mxOutput, reduced = BLS_LGCM_r@mxOutput, boot = FALSE, rep = NA)
 #' }
@@ -48,7 +50,7 @@
 #' @importFrom OpenMx mxCompare
 #'
 getLRT <- function(full, reduced, boot = FALSE, rep = NA){
-  if (I(boot & is.na(rep))){
+  if (boot && is.na(rep)){
     stop("Please specify bootstrap replications!")
   }
   LRT_out <- mxCompare(full, reduced, boot = boot, replications = rep)[, c(3:5, 7:9, 6)]

@@ -28,23 +28,30 @@
 #' @return A pre-optimized mxModel for a longitudinal mediation model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxPath mxModel mxAlgebra mxMatrix mxData
 #'
 getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, records, starts, res_cor){
+  # If res_cor not provided, default to 0.3 for mxPath starting values (freely estimated parameter)
+  if (is.null(res_cor)){
+    n_traj <- if (x_type == "baseline") 2 else 3
+    n_pairs <- n_traj * (n_traj - 1) / 2
+    res_cor <- rep(0.3, n_pairs)
+  }
   RES <- COV <- list()
   if (x_type == "baseline"){
     y_records <- records[[1]]
     m_records <- records[[2]]
     traj_var <- c(y_var, m_var)
     traj_list <- list()
-    for (traj in 1:length(traj_var)){
+    for (traj in seq_along(traj_var)){
       traj_list[[length(traj_list) + 1]] <- paste0(traj_var[traj], records[[traj]])
     }
     manifests <- c(unlist(traj_list), x_var)
-    var0 <- c(starts[[3]][[5]], starts[[2]][[4]])
-    var_1 <- c(starts[[3]][[5]])
-    var_2 <- c(starts[[2]][[4]])
+    var0 <- c(starts$Y$residuals, starts$M$residuals)
+    var_1 <- c(starts$Y$residuals)
+    var_2 <- c(starts$M$residuals)
   }
   else if (x_type == "longitudinal"){
     y_records <- records[[1]]
@@ -52,15 +59,15 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
     x_records <- records[[3]]
     traj_var <- c(y_var, m_var, x_var)
     traj_list <- list()
-    for (traj in 1:length(traj_var)){
+    for (traj in seq_along(traj_var)){
       traj_list[[length(traj_list) + 1]] <- paste0(traj_var[traj], records[[traj]])
     }
     manifests <- unlist(traj_list)
-    var0 <- c(starts[[3]][[5]], starts[[2]][[4]], starts[[1]][[3]])
-    var_1 <- c(starts[[3]][[5]], starts[[3]][[5]], starts[[2]][[4]])
-    var_2 <- c(starts[[2]][[4]], starts[[1]][[3]], starts[[1]][[3]])
+    var0 <- c(starts$Y$residuals, starts$M$residuals, starts$X$residuals)
+    var_1 <- c(starts$Y$residuals, starts$Y$residuals, starts$M$residuals)
+    var_2 <- c(starts$M$residuals, starts$X$residuals, starts$X$residuals)
   }
-  for (traj in 1:length(traj_var)){
+  for (traj in seq_along(traj_var)){
     RES[[length(RES) + 1]] <- mxPath(from = traj_list[[traj]], to = traj_list[[traj]], arrows = 2, free = TRUE, values = var0[traj],
                                      labels = paste0(traj_var[traj], "_residuals"))
   }
@@ -86,13 +93,13 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
     if (curveFun %in% c("linear", "LIN")){
       latents <- c("eta0Y", "eta1Y", "eta0M", "eta1M")
       GF_MEAN <- GF_VAR <- GF_LOADINGS <- X_BS <- BETA <- list()
-      GF_MEAN <- mxPath(from = "one", to = latents, arrows = 1, free = TRUE, values = c(starts[[3]][[1]][1:2], starts[[2]][[1]][1:2]),
+      GF_MEAN <- mxPath(from = "one", to = latents, arrows = 1, free = TRUE, values = c(starts$Y$means[1:2], starts$M$means[1:2]),
                         labels = c("Y_alpha0", "Y_alpha1", "M_alpha0", "M_alpha1"))
       GF_VAR <- list(mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[3]][[4]][row(starts[[3]][[4]]) >= col(starts[[3]][[4]])],
+                            free = TRUE, values = starts$Y$covMatrix[row(starts$Y$covMatrix) >= col(starts$Y$covMatrix)],
                             labels = c("Y_psi00", "Y_psi01", "Y_psi11")),
                      mxPath(from = latents[3:4], to = latents[3:4], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[2]][[3]][row(starts[[2]][[3]]) >= col(starts[[2]][[3]])],
+                            free = TRUE, values = starts$M$covMatrix[row(starts$M$covMatrix) >= col(starts$M$covMatrix)],
                             labels = c("M_psi00", "M_psi01", "M_psi11")))
       GF_LOADINGS <- list(mxPath(from = "eta0Y", to = paste0(y_var, y_records), arrows = 1, free = FALSE, values = 1),
                           mxPath(from = "eta1Y", to = paste0(y_var, y_records), arrows = 1, free = FALSE, values = 0,
@@ -100,16 +107,16 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
                           mxPath(from = "eta0M", to = paste0(m_var, m_records), arrows = 1, free = FALSE, values = 1),
                           mxPath(from = "eta1M", to = paste0(m_var, m_records), arrows = 1, free = FALSE, values = 0,
                                  labels = paste0("L1", m_records, "M[1,1]")))
-      X_BS <- list(mxPath(from = "one", to = x_var, arrows = 1, free = TRUE, values = starts[[1]][[1]], labels = c("muX")),
-                   mxPath(from = x_var, to = x_var, connect = "unique.pairs", arrows = 2, free = TRUE, values = c(starts[[1]][[2]]),
+      X_BS <- list(mxPath(from = "one", to = x_var, arrows = 1, free = TRUE, values = starts$X$means, labels = c("muX")),
+                   mxPath(from = x_var, to = x_var, connect = "unique.pairs", arrows = 2, free = TRUE, values = c(starts$X$covMatrix),
                           labels = "phi11"))
-      BETA <- list(mxPath(from = x_var, to = latents, arrows = 1, free = TRUE, values = c(starts[[3]][[2]], starts[[2]][[2]]),
+      BETA <- list(mxPath(from = x_var, to = latents, arrows = 1, free = TRUE, values = c(starts$Y$beta_x, starts$M$beta),
                           labels = paste0("beta", rep(c("Y", "M"), each = 2), rep(c(0, 1), 2))),
-                   mxPath(from = latents[3], to = latents[1], arrows = 1, free = TRUE, values = starts[[3]][[3]][1, 1],
+                   mxPath(from = latents[3], to = latents[1], arrows = 1, free = TRUE, values = starts$Y$beta_m[1, 1],
                           labels = "betaM0Y0"),
-                   mxPath(from = latents[3], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 1],
+                   mxPath(from = latents[3], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 1],
                           labels = "betaM0Y1"),
-                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 2],
+                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 2],
                           labels = "betaM1Y1"))
       M_ALPHA <- mxAlgebra(rbind(M_alpha0, M_alpha1), name = "M_alpha")
       M_PSI_r <- mxAlgebra(rbind(cbind(M_psi00, M_psi01),
@@ -138,13 +145,13 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
       latents <- c("eta1Y", "etarY", "eta2Y", "eta1M", "etarM", "eta2M")
       GF_MEAN <- GF_VAR <- GF_LOADINGS <- GAMMA <- X_BS <- BETA <- list()
       GF_MEAN <- mxPath(from = "one", to = latents, arrows = 1, free = TRUE,
-                        values = c(starts[[3]][[1]][1:3], starts[[2]][[1]][1:3]),
+                        values = c(starts$Y$means[1:3], starts$M$means[1:3]),
                         labels = c("Y_alpha1", "Y_alphar", "Y_alpha2", "M_alpha1", "M_alphar", "M_alpha2"))
       GF_VAR <- list(mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[3]][[4]][row(starts[[3]][[4]]) >= col(starts[[3]][[4]])],
+                            free = TRUE, values = starts$Y$covMatrix[row(starts$Y$covMatrix) >= col(starts$Y$covMatrix)],
                             labels = c("Y_psi11", "Y_psi1r", "Y_psi12", "Y_psirr", "Y_psir2", "Y_psi22")),
                      mxPath(from = latents[4:6], to = latents[4:6], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[2]][[3]][row(starts[[2]][[3]]) >= col(starts[[2]][[3]])],
+                            free = TRUE, values = starts$M$covMatrix[row(starts$M$covMatrix) >= col(starts$M$covMatrix)],
                             labels = c("M_psi11", "M_psi1r", "M_psi12", "M_psirr", "M_psir2", "M_psi22")))
       GF_LOADINGS <- list(mxPath(from = "eta1Y", to = paste0(y_var, y_records), arrows = 1, free = FALSE, values = 0,
                                  labels = paste0("L1", y_records, "Y[1,1]")),
@@ -156,33 +163,33 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
                           mxPath(from = "etarM", to = paste0(m_var, m_records), arrows = 1, free = FALSE, values = 1),
                           mxPath(from = "eta2M", to = paste0(m_var, m_records), arrows = 1, free = FALSE, values = 0,
                                  labels = paste0("L2", m_records, "M[1,1]")))
-      GAMMA <- list(mxMatrix("Full", 1, 1, free = TRUE, values = starts[[3]][[1]][4], labels = "Y_knot", name = "Y_mug"),
-                    mxMatrix("Full", 1, 1, free = TRUE, values = starts[[2]][[1]][4], labels = "M_knot", name = "M_mug"))
-      X_BS <- list(mxPath(from = "one", to = x_var, arrows = 1, free = TRUE, values = starts[[1]][[1]], labels = c("muX")),
-                   mxPath(from = x_var, to = x_var, connect = "unique.pairs", arrows = 2, free = TRUE, values = c(starts[[1]][[2]]),
+      GAMMA <- list(mxMatrix("Full", 1, 1, free = TRUE, values = starts$Y$means[4], labels = "Y_knot", name = "Y_mug"),
+                    mxMatrix("Full", 1, 1, free = TRUE, values = starts$M$means[4], labels = "M_knot", name = "M_mug"))
+      X_BS <- list(mxPath(from = "one", to = x_var, arrows = 1, free = TRUE, values = starts$X$means, labels = c("muX")),
+                   mxPath(from = x_var, to = x_var, connect = "unique.pairs", arrows = 2, free = TRUE, values = c(starts$X$covMatrix),
                           labels = "phi11"))
-      BETA <- list(mxPath(from = x_var, to = latents, arrows = 1, free = TRUE, values = c(starts[[3]][[2]], starts[[2]][[2]]),
+      BETA <- list(mxPath(from = x_var, to = latents, arrows = 1, free = TRUE, values = c(starts$Y$beta_x, starts$M$beta),
                           labels = paste0("beta", rep(c("Y", "M"), each = 3), rep(c(1, "r", 2), 2))),
-                   mxPath(from = latents[4], to = latents[1], arrows = 1, free = TRUE, values = starts[[3]][[3]][1, 1],
+                   mxPath(from = latents[4], to = latents[1], arrows = 1, free = TRUE, values = starts$Y$beta_m[1, 1],
                           labels = "betaM1Y1"),
-                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 1],
+                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 1],
                           labels = "betaM1Yr"),
-                   mxPath(from = latents[4], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[3]][3, 1],
+                   mxPath(from = latents[4], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_m[3, 1],
                           labels = "betaM1Y2"),
-                   mxPath(from = latents[5], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 2],
+                   mxPath(from = latents[5], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 2],
                           labels = "betaMrYr"),
-                   mxPath(from = latents[5], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[3]][3, 2],
+                   mxPath(from = latents[5], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_m[3, 2],
                           labels = "betaMrY2"),
-                   mxPath(from = latents[6], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[3]][3, 3],
+                   mxPath(from = latents[6], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_m[3, 3],
                           labels = "betaM2Y2"))
       M_ALPHA <- mxAlgebra(rbind(M_alpha1, M_alphar, M_alpha2, M_mug), name = "M_alpha")
-      M_PSI_r <- mxAlgebra(rbind(cbind("M_psi11", "M_psi1r", "M_psi12"),
-                                 cbind("M_psi1r", "M_psirr", "M_psir2"),
-                                 cbind("M_psi12", "M_psir2", "M_psi22")), name = "M_psi_r")
+      M_PSI_r <- mxAlgebra(rbind(cbind(M_psi11, M_psi1r, M_psi12),
+                                 cbind(M_psi1r, M_psirr, M_psir2),
+                                 cbind(M_psi12, M_psir2, M_psi22)), name = "M_psi_r")
       Y_ALPHA <- mxAlgebra(rbind(Y_alpha1, Y_alphar, Y_alpha2, Y_mug), name = "Y_alpha")
-      Y_PSI_r <- mxAlgebra(rbind(cbind("Y_psi11", "Y_psi1r", "Y_psi12"),
-                                 cbind("Y_psi1r", "Y_psirr", "Y_psir2"),
-                                 cbind("Y_psi12", "Y_psir2", "Y_psi22")), name = "Y_psi_r")
+      Y_PSI_r <- mxAlgebra(rbind(cbind(Y_psi11, Y_psi1r, Y_psi12),
+                                 cbind(Y_psi1r, Y_psirr, Y_psir2),
+                                 cbind(Y_psi12, Y_psir2, Y_psi22)), name = "Y_psi_r")
       BETA_XM <- mxAlgebra(rbind(betaM1, betaMr, betaM2), name = "beta_xm")
       BETA_XY <- mxAlgebra(rbind(betaY1, betaYr, betaY2), name = "beta_xy")
       BETA_MY <- mxAlgebra(rbind(cbind(betaM1Y1, 0, 0),
@@ -214,16 +221,16 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
       latents <- c("eta0Y", "eta1Y", "eta0M", "eta1M", "eta0X", "eta1X")
       GF_MEAN <- GF_VAR <- GF_LOADINGS <- BETA <- list()
       GF_MEAN <- mxPath(from = "one", to = latents, arrows = 1, free = TRUE,
-                        values = c(starts[[3]][[1]][1:2], starts[[2]][[1]][1:2], starts[[1]][[1]][1:2]),
+                        values = c(starts$Y$means[1:2], starts$M$means[1:2], starts$X$means[1:2]),
                         labels = c("Y_alpha0", "Y_alpha1", "M_alpha0", "M_alpha1", "X_mean0", "X_mean1"))
       GF_VAR <- list(mxPath(from = latents[1:2], to = latents[1:2], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[3]][[4]][row(starts[[3]][[4]]) >= col(starts[[3]][[4]])],
+                            free = TRUE, values = starts$Y$covMatrix[row(starts$Y$covMatrix) >= col(starts$Y$covMatrix)],
                             labels = c("Y_psi00", "Y_psi01", "Y_psi11")),
                      mxPath(from = latents[3:4], to = latents[3:4], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[2]][[3]][row(starts[[2]][[3]]) >= col(starts[[2]][[3]])],
+                            free = TRUE, values = starts$M$covMatrix[row(starts$M$covMatrix) >= col(starts$M$covMatrix)],
                             labels = c("M_psi00", "M_psi01", "M_psi11")),
                      mxPath(from = latents[5:6], to = latents[5:6], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[1]][[2]][row(starts[[1]][[2]]) >= col(starts[[1]][[2]])],
+                            free = TRUE, values = starts$X$covMatrix[row(starts$X$covMatrix) >= col(starts$X$covMatrix)],
                             labels = c("X_psi00", "X_psi01", "X_psi11")))
       GF_LOADINGS <- list(mxPath(from = "eta0Y", to = paste0(y_var, y_records), arrows = 1, free = FALSE, values = 1),
                           mxPath(from = "eta1Y", to = paste0(y_var, y_records), arrows = 1, free = FALSE, values = 0,
@@ -234,33 +241,33 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
                           mxPath(from = "eta0X", to = paste0(x_var, x_records), arrows = 1, free = FALSE, values = 1),
                           mxPath(from = "eta1X", to = paste0(x_var, x_records), arrows = 1, free = FALSE, values = 0,
                                  labels = paste0("L1", x_records, "X[1,1]")))
-      BETA <- list(mxPath(from = latents[5], to = latents[1], arrows = 1, free = TRUE, values = starts[[3]][[2]][1, 1],
+      BETA <- list(mxPath(from = latents[5], to = latents[1], arrows = 1, free = TRUE, values = starts$Y$beta_x[1, 1],
                           labels = "betaX0Y0"),
-                   mxPath(from = latents[5], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[2]][2, 1],
+                   mxPath(from = latents[5], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_x[2, 1],
                           labels = "betaX0Y1"),
-                   mxPath(from = latents[6], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[2]][2, 2],
+                   mxPath(from = latents[6], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_x[2, 2],
                           labels = "betaX1Y1"),
-                   mxPath(from = latents[5], to = latents[3], arrows = 1, free = TRUE, values = starts[[2]][[2]][1, 1],
+                   mxPath(from = latents[5], to = latents[3], arrows = 1, free = TRUE, values = starts$M$beta[1, 1],
                           labels = "betaX0M0"),
-                   mxPath(from = latents[5], to = latents[4], arrows = 1, free = TRUE, values = starts[[2]][[2]][2, 1],
+                   mxPath(from = latents[5], to = latents[4], arrows = 1, free = TRUE, values = starts$M$beta[2, 1],
                           labels = "betaX0M1"),
-                   mxPath(from = latents[6], to = latents[4], arrows = 1, free = TRUE, values = starts[[2]][[2]][2, 2],
+                   mxPath(from = latents[6], to = latents[4], arrows = 1, free = TRUE, values = starts$M$beta[2, 2],
                           labels = "betaX1M1"),
-                   mxPath(from = latents[3], to = latents[1], arrows = 1, free = TRUE, values = starts[[3]][[3]][1, 1],
+                   mxPath(from = latents[3], to = latents[1], arrows = 1, free = TRUE, values = starts$Y$beta_m[1, 1],
                           labels = "betaM0Y0"),
-                   mxPath(from = latents[3], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 1],
+                   mxPath(from = latents[3], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 1],
                           labels = "betaM0Y1"),
-                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 2],
+                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 2],
                           labels = "betaM1Y1"))
       X_MEAN <- mxAlgebra(rbind(X_mean0, X_mean1), name = "X_mean")
-      X_PSI <- mxAlgebra(rbind(cbind("X_psi00", "X_psi01"),
-                               cbind("X_psi01", "X_psi11")), name = "X_psi0")
+      X_PSI <- mxAlgebra(rbind(cbind(X_psi00, X_psi01),
+                               cbind(X_psi01, X_psi11)), name = "X_psi0")
       M_ALPHA <- mxAlgebra(rbind(M_alpha0, M_alpha1), name = "M_alpha")
-      M_PSI_r <- mxAlgebra(rbind(cbind("M_psi00", "M_psi01"),
-                                 cbind("M_psi01", "M_psi11")), name = "M_psi_r")
+      M_PSI_r <- mxAlgebra(rbind(cbind(M_psi00, M_psi01),
+                                 cbind(M_psi01, M_psi11)), name = "M_psi_r")
       Y_ALPHA <- mxAlgebra(rbind(Y_alpha0, Y_alpha1), name = "Y_alpha")
-      Y_PSI_r <- mxAlgebra(rbind(cbind("Y_psi00", "Y_psi01"),
-                                 cbind("Y_psi01", "Y_psi11")), name = "Y_psi_r")
+      Y_PSI_r <- mxAlgebra(rbind(cbind(Y_psi00, Y_psi01),
+                                 cbind(Y_psi01, Y_psi11)), name = "Y_psi_r")
       BETA_XM <- mxAlgebra(rbind(cbind(betaX0M0, 0),
                                  cbind(betaX0M1, betaX1M1)), name = "beta_xm")
       BETA_XY <- mxAlgebra(rbind(cbind(betaX0Y0, 0),
@@ -285,21 +292,21 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
       latents <- c("eta1Y", "etarY", "eta2Y", "eta1M", "etarM", "eta2M", "eta1X", "etarX", "eta2X")
       GF_MEAN <- GF_VAR <- GF_LOADINGS <- GAMMA <- BETA <- list()
       GF_MEAN <- mxPath(from = "one", to = latents, arrows = 1, free = TRUE,
-                        values = c(starts[[3]][[1]][1:3], starts[[2]][[1]][1:3], starts[[1]][[1]][1:3]),
+                        values = c(starts$Y$means[1:3], starts$M$means[1:3], starts$X$means[1:3]),
                         labels = c("Y_alpha1", "Y_alphar", "Y_alpha2", "M_alpha1", "M_alphar", "M_alpha2",
                                    "X_mean1", "X_meanr", "X_mean2"))
       GF_VAR <- list(mxPath(from = latents[1:3], to = latents[1:3], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[3]][[4]][row(starts[[3]][[4]]) >= col(starts[[3]][[4]])],
+                            free = TRUE, values = starts$Y$covMatrix[row(starts$Y$covMatrix) >= col(starts$Y$covMatrix)],
                             labels = c("Y_psi11", "Y_psi1r", "Y_psi12",
                                        "Y_psirr", "Y_psir2",
                                        "Y_psi22")),
                      mxPath(from = latents[4:6], to = latents[4:6], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[2]][[3]][row(starts[[2]][[3]]) >= col(starts[[2]][[3]])],
+                            free = TRUE, values = starts$M$covMatrix[row(starts$M$covMatrix) >= col(starts$M$covMatrix)],
                             labels = c("M_psi11", "M_psi1r", "M_psi12",
                                        "M_psirr", "M_psir2",
                                        "M_psi22")),
                      mxPath(from = latents[7:9], to = latents[7:9], arrows = 2, connect = "unique.pairs",
-                            free = TRUE, values = starts[[1]][[2]][row(starts[[1]][[2]]) >= col(starts[[1]][[2]])],
+                            free = TRUE, values = starts$X$covMatrix[row(starts$X$covMatrix) >= col(starts$X$covMatrix)],
                             labels = c("X_psi11", "X_psi1r", "X_psi12",
                                        "X_psirr", "X_psir2",
                                        "X_psi22")))
@@ -318,79 +325,79 @@ getMED.mxModel <- function(dat, t_var, y_var, m_var, x_type, x_var, curveFun, re
                           mxPath(from = "etarX", to = paste0(x_var, x_records), arrows = 1, free = FALSE, values = 1),
                           mxPath(from = "eta2X", to = paste0(x_var, x_records), arrows = 1, free = FALSE, values = 0,
                                  labels = paste0("L2", x_records, "X[1,1]")))
-      GAMMA <- list(mxMatrix("Full", 1, 1, free = TRUE, values = starts[[3]][[1]][4],
+      GAMMA <- list(mxMatrix("Full", 1, 1, free = TRUE, values = starts$Y$means[4],
                              labels = "Y_knot", name = "Y_mug"),
-                    mxMatrix("Full", 1, 1, free = TRUE, values = starts[[2]][[1]][4],
+                    mxMatrix("Full", 1, 1, free = TRUE, values = starts$M$means[4],
                              labels = "M_knot", name = "M_mug"),
-                    mxMatrix("Full", 1, 1, free = TRUE, values = starts[[1]][[1]][4],
+                    mxMatrix("Full", 1, 1, free = TRUE, values = starts$X$means[4],
                              labels = "X_knot", name = "X_mug"))
-      BETA <- list(mxPath(from = latents[7], to = latents[1], arrows = 1, free = TRUE, values = starts[[3]][[2]][1, 1],
+      BETA <- list(mxPath(from = latents[7], to = latents[1], arrows = 1, free = TRUE, values = starts$Y$beta_x[1, 1],
                           labels = "betaX1Y1"),
                    ##### Slope 1 of X to intercept of Y
-                   mxPath(from = latents[7], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[2]][2, 1],
+                   mxPath(from = latents[7], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_x[2, 1],
                           labels = "betaX1Yr"),
                    ##### Slope 1 of X to slope 2 of Y
-                   mxPath(from = latents[7], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[2]][3, 1],
+                   mxPath(from = latents[7], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_x[3, 1],
                           labels = "betaX1Y2"),
                    ##### Intercept of X to intercept of Y
-                   mxPath(from = latents[8], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[2]][2, 2],
+                   mxPath(from = latents[8], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_x[2, 2],
                           labels = "betaXrYr"),
                    ##### Intercept of X to slope 2 of Y
-                   mxPath(from = latents[8], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[2]][3, 2],
+                   mxPath(from = latents[8], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_x[3, 2],
                           labels = "betaXrY2"),
                    ##### Slope 2 of X to slope 2 of Y
-                   mxPath(from = latents[9], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[2]][3, 3],
+                   mxPath(from = latents[9], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_x[3, 3],
                           labels = "betaX2Y2"),
 
                    ##### Slope 1 of X to slope 1 of M
-                   mxPath(from = latents[7], to = latents[4], arrows = 1, free = TRUE, values = starts[[2]][[2]][1, 1],
+                   mxPath(from = latents[7], to = latents[4], arrows = 1, free = TRUE, values = starts$M$beta[1, 1],
                           labels = "betaX1M1"),
                    ##### Slope 1 of X to intercept of M
-                   mxPath(from = latents[7], to = latents[5], arrows = 1, free = TRUE, values = starts[[2]][[2]][2, 1],
+                   mxPath(from = latents[7], to = latents[5], arrows = 1, free = TRUE, values = starts$M$beta[2, 1],
                           labels = "betaX1Mr"),
                    ##### Slope 1 of X to slope 2 of M
-                   mxPath(from = latents[7], to = latents[6], arrows = 1, free = TRUE, values = starts[[2]][[2]][3, 1],
+                   mxPath(from = latents[7], to = latents[6], arrows = 1, free = TRUE, values = starts$M$beta[3, 1],
                           labels = "betaX1M2"),
                    ##### Intercept of X to intercept of M
-                   mxPath(from = latents[8], to = latents[5], arrows = 1, free = TRUE, values = starts[[2]][[2]][2, 2],
+                   mxPath(from = latents[8], to = latents[5], arrows = 1, free = TRUE, values = starts$M$beta[2, 2],
                           labels = "betaXrMr"),
                    ##### Intercept of X to slope 2 of M
-                   mxPath(from = latents[8], to = latents[6], arrows = 1, free = TRUE, values = starts[[2]][[2]][3, 2],
+                   mxPath(from = latents[8], to = latents[6], arrows = 1, free = TRUE, values = starts$M$beta[3, 2],
                           labels = "betaXrM2"),
                    ##### Slope 2 of X to slope 2 of M
-                   mxPath(from = latents[9], to = latents[6], arrows = 1, free = TRUE, values = starts[[2]][[2]][3, 3],
+                   mxPath(from = latents[9], to = latents[6], arrows = 1, free = TRUE, values = starts$M$beta[3, 3],
                           labels = "betaX2M2"),
 
                    ##### Slope 1 of M to slope 1 of Y
-                   mxPath(from = latents[4], to = latents[1], arrows = 1, free = TRUE, values = starts[[3]][[3]][1, 1],
+                   mxPath(from = latents[4], to = latents[1], arrows = 1, free = TRUE, values = starts$Y$beta_m[1, 1],
                           labels = "betaM1Y1"),
                    ##### Slope 1 of M to intercept of Y
-                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 1],
+                   mxPath(from = latents[4], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 1],
                           labels = "betaM1Yr"),
                    ##### Slope 1 of M to slope 2 of Y
-                   mxPath(from = latents[4], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[3]][3, 1],
+                   mxPath(from = latents[4], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_m[3, 1],
                           labels = "betaM1Y2"),
                    ##### Intercept of M to intercept of Y
-                   mxPath(from = latents[5], to = latents[2], arrows = 1, free = TRUE, values = starts[[3]][[3]][2, 2],
+                   mxPath(from = latents[5], to = latents[2], arrows = 1, free = TRUE, values = starts$Y$beta_m[2, 2],
                           labels = "betaMrYr"),
                    ##### Intercept of M to slope 2 of Y
-                   mxPath(from = latents[5], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[3]][3, 2],
+                   mxPath(from = latents[5], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_m[3, 2],
                           labels = "betaMrY2"),
                    ##### Slope 2 of M to slope 2 of Y
-                   mxPath(from = latents[6], to = latents[3], arrows = 1, free = TRUE, values = starts[[3]][[3]][3, 3],
+                   mxPath(from = latents[6], to = latents[3], arrows = 1, free = TRUE, values = starts$Y$beta_m[3, 3],
                           labels = "betaM2Y2"))
       X_MEAN <- mxAlgebra(rbind(X_mean1, X_meanr, X_mean2, X_mug), name = "X_mean")
-      X_PSI <- mxAlgebra(rbind(cbind("X_psi11", "X_psi1r", "X_psi12"),
-                               cbind("X_psi1r", "X_psirr", "X_psir2"),
-                               cbind("X_psi12", "X_psir2", "X_psi22")), name = "X_psi0")
+      X_PSI <- mxAlgebra(rbind(cbind(X_psi11, X_psi1r, X_psi12),
+                               cbind(X_psi1r, X_psirr, X_psir2),
+                               cbind(X_psi12, X_psir2, X_psi22)), name = "X_psi0")
       M_ALPHA <- mxAlgebra(rbind(M_alpha1, M_alphar, M_alpha2, M_mug), name = "M_alpha")
-      M_PSI_r <- mxAlgebra(rbind(cbind("M_psi11", "M_psi1r", "M_psi12"),
-                                 cbind("M_psi1r", "M_psirr", "M_psir2"),
-                                 cbind("M_psi12", "M_psir2", "M_psi22")), name = "M_psi_r")
+      M_PSI_r <- mxAlgebra(rbind(cbind(M_psi11, M_psi1r, M_psi12),
+                                 cbind(M_psi1r, M_psirr, M_psir2),
+                                 cbind(M_psi12, M_psir2, M_psi22)), name = "M_psi_r")
       Y_ALPHA <- mxAlgebra(rbind(Y_alpha1, Y_alphar, Y_alpha2, Y_mug), name = "Y_alpha")
-      Y_PSI_r <- mxAlgebra(rbind(cbind("Y_psi11", "Y_psi1r", "Y_psi12"),
-                                 cbind("Y_psi1r", "Y_psirr", "Y_psir2"),
-                                 cbind("Y_psi12", "Y_psir2", "Y_psi22")), name = "Y_psi_r")
+      Y_PSI_r <- mxAlgebra(rbind(cbind(Y_psi11, Y_psi1r, Y_psi12),
+                                 cbind(Y_psi1r, Y_psirr, Y_psir2),
+                                 cbind(Y_psi12, Y_psir2, Y_psi22)), name = "Y_psi_r")
       BETA_XM <- mxAlgebra(rbind(cbind(betaX1M1, 0, 0),
                                  cbind(betaX1Mr, betaXrMr, 0),
                                  cbind(betaX1M2, betaXrM2, betaX2M2)), name = "beta_xm")

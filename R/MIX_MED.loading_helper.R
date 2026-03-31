@@ -30,6 +30,7 @@
 #' loadings of a longitudinal mediation model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 getMIX_MED.loadings <- function(nClass, t_var, y_var, m_var, x_var, x_type, curveFun, y_records, m_records,
                                 x_records = NULL){
@@ -37,11 +38,11 @@ getMIX_MED.loadings <- function(nClass, t_var, y_var, m_var, x_var, x_type, curv
   for (k in 1:nClass){
     outPointM <- outPointY <- list()
     for (j in m_records){
-      outPointM[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var[1], j),
+      outPointM[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var[1], j),
                                  name = paste0("t", m_var, j))
     }
     for (j in y_records){
-      outPointY[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var[2], j),
+      outPointY[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var[2], j),
                                  name = paste0("t", y_var, j))
     }
     if (x_type == "baseline"){
@@ -76,7 +77,7 @@ getMIX_MED.loadings <- function(nClass, t_var, y_var, m_var, x_var, x_type, curv
     else if (x_type == "longitudinal"){
       outPointX <- list()
       for (j in x_records){
-        outPointX[[j]] <- mxMatrix("Full", 1, 1, free = F, labels = paste0("data.", t_var[1], j),
+        outPointX[[j]] <- mxMatrix("Full", 1, 1, free = FALSE, labels = paste0("data.", t_var[1], j),
                                    name = paste0("t", x_var, j))
       }
       if (curveFun %in% c("linear", "LIN")){

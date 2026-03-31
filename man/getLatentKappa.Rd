@@ -49,10 +49,9 @@ RMS_dat0$gx2 <- scale(RMS_dat0$EDU)
 ## Fit a growth mixture model with no TICs
 set.seed(20191029)
 MIX_BLS_LGCM_r <-  getMIX(
-  dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
+  dat = RMS_dat0, prop_starts = c(0.30, 0.40, 0.30), sub_Model = "LGCM",
   cluster_TIC = NULL, y_var = "M", t_var = "T", records = 1:9,
-  curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
-  growth_TIC = NULL, tries = 10
+  curveFun = "BLS", intrinsic = FALSE, growth_TIC = NULL, tries = 10
 )
 ## Membership of each individual from growth mixture model with no TICs
 label1 <- getPosterior(
@@ -63,7 +62,7 @@ set.seed(20191029)
 MIX_BLS_LGCM.TIC_r <-  getMIX(
   dat = RMS_dat0, prop_starts = c(0.33, 0.34, 0.33), sub_Model = "LGCM",
   cluster_TIC = c("gx1", "gx2"), y_var = "M", t_var = "T", records = 1:9,
-  curveFun = "BLS", intrinsic = FALSE, res_scale = list(0.3, 0.3, 0.3),
+  curveFun = "BLS", intrinsic = FALSE,
   growth_TIC = c("ex1", "ex2"), tries = 10
 )
 ## Membership of each individual from growth mixture model with growth TICs and cluster TICs
@@ -71,7 +70,7 @@ label2 <- getPosterior(
   model = MIX_BLS_LGCM.TIC_r@mxOutput, nClass = 3, label = FALSE,
   cluster_TIC = c("gx1", "gx2")
 )
-## Calcualte the agreement between two sets of membership labels
+## Calculate the agreement between two sets of membership labels
 getLatentKappa(label1 = label1@membership, label2 = label2@membership)
 }
 
@@ -85,4 +84,7 @@ getLatentKappa(label1 = label1@membership, label2 = label2@membership)
   \doi{10.2307/2529310}}
   \item {Agresti, A. (2012). Models for Matched Pairs. In Categorical Data Analysis (pp. 413-454). Wiley.}
 }
+}
+\seealso{
+\code{\link{getPosterior}}, \code{\link{getMIX}}
 }

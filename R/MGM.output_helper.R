@@ -23,17 +23,18 @@
 #' latent growth curve model or a multivariate latent change score model.
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxEval mxEvalByName mxSE diag2vec
 #'
 getMGM.output <- function(model, y_var, records, curveFun, y_model, names){
   mean_est <- mean_se <- psi_est <- psi_se <- res_est <- res_se <-
     psi_btw_est <- psi_btw_se <- res_btw_est <- res_btw_se <- outcome_est <- outcome_se <- btw_est <- btw_se <- list()
-  for (traj in 1:length(y_var)){
+  for (traj in seq_along(y_var)){
     mean_est[[length(mean_est) + 1]] <- mxEvalByName(paste0(y_var[traj], "_mean0"), model = model)
-    mean_se[[length(mean_se) + 1]] <- mxSE(paste0(y_var[traj], "_mean0"), model, forceName = T)
+    mean_se[[length(mean_se) + 1]] <- mxSE(paste0(y_var[traj], "_mean0"), model, forceName = TRUE)
     psi_est[[length(psi_est) + 1]] <- mxEvalByName(paste0(y_var[traj], "_psi0"), model = model)
-    psi_se[[length(psi_se) + 1]] <- mxSE(paste0(y_var[traj], "_psi0"), model, forceName = T)
+    psi_se[[length(psi_se) + 1]] <- mxSE(paste0(y_var[traj], "_psi0"), model, forceName = TRUE)
     res_est[[length(res_est) + 1]] <- model@output$estimate[grep(paste0(y_var[traj], "_residuals"), names(model@output$estimate))]
     res_se[[length(res_se) + 1]] <- model@output$standardErrors[, 1][grep(paste0(y_var[traj], "_residuals"),
                                                                           names(model@output$standardErrors[, 1]))]
@@ -44,15 +45,16 @@ getMGM.output <- function(model, y_var, records, curveFun, y_model, names){
   }
   for (traj_i in 1:(length(y_var) - 1)){
     for (traj_j in traj_i:(length(y_var) - 1)){
-      psi_btw_est[[traj_i + traj_j - 1]] <- mxEvalByName(paste0(y_var[traj_i], y_var[traj_j + 1],
-                                                                "_psi"), model = model)
-      psi_btw_se[[traj_i + traj_j - 1]] <- mxSE(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"),
-                                                model, forceName = T)
+      pair_idx <- traj_i + traj_j - 1
+      psi_btw_est[[pair_idx]] <- mxEvalByName(paste0(y_var[traj_i], y_var[traj_j + 1],
+                                                     "_psi"), model = model)
+      psi_btw_se[[pair_idx]] <- mxSE(paste0(y_var[traj_i], y_var[traj_j + 1], "_psi"),
+                                     model, forceName = TRUE)
       res_btw_est[[length(res_btw_est) + 1]] <- model@output$estimate[grep(paste0(y_var[traj_i], y_var[traj_j + 1], "_RES"), names(model@output$estimate))]
       res_btw_se[[length(res_btw_se) + 1]] <- model@output$standardErrors[, 1][grep(paste0(y_var[traj_i], y_var[traj_j + 1], "_RES"),
                                                                                     names(model@output$standardErrors[, 1]))]
-      btw_est[[length(btw_est) + 1]] <- c(unlist(c(psi_btw_est)), unlist(res_btw_est))
-      btw_se[[length(btw_se) + 1]] <- c(unlist(c(psi_btw_se)), unlist(res_btw_se))
+      btw_est <- .append_between_output(btw_est, psi_btw_est[[pair_idx]], res_btw_est[[length(res_btw_est)]])
+      btw_se <- .append_between_output(btw_se, psi_btw_se[[pair_idx]], res_btw_se[[length(res_btw_se)]])
     }
   }
   if (y_model == "LGCM"){
@@ -63,19 +65,19 @@ getMGM.output <- function(model, y_var, records, curveFun, y_model, names){
     slp_m.est_L <- slp_v.est_L <- slp_cov.est_L <- chg_inv_m.est_L <- chg_inv_v.est_L <- chg_bl_m.est_L <- chg_bl_v.est_L <-
       slp_m.se_L <- slp_v.se_L <- slp_cov.se_L <- chg_inv_m.se_L <- chg_inv_v.se_L <- chg_bl_m.se_L <- chg_bl_v.se_L <-
       rel_m_est_L <- rel_m_se_L <- list()
-    for (traj in 1:length(y_var)){
+    for (traj in seq_along(y_var)){
       slp_m.est_L[[traj]] <- mxEvalByName(paste0(y_var[traj], "slp_m"), model = model)
       slp_v.est_L[[traj]] <- diag(mxEvalByName(paste0(y_var[traj], "slp_v"), model = model))
       chg_inv_m.est_L[[traj]] <- mxEvalByName(paste0(y_var[traj], "chg_inv_m"), model = model)
       chg_inv_v.est_L[[traj]] <- mxEvalByName(paste0(y_var[traj], "chg_inv_v"), model = model)
       chg_bl_m.est_L[[traj]] <- mxEvalByName(paste0(y_var[traj], "chg_bl_m"), model = model)
       chg_bl_v.est_L[[traj]] <- diag(mxEvalByName(paste0(y_var[traj], "chg_bl_v"), model = model))
-      slp_m.se_L[[traj]] <- mxSE(paste0(y_var[traj], "slp_m"), model, forceName = T)
-      slp_v.se_L[[traj]] <- diag(mxSE(paste0(y_var[traj], "slp_v"), model, forceName = T))
-      chg_inv_m.se_L[[traj]] <- mxSE(paste0(y_var[traj], "chg_inv_m"), model, forceName = T)
-      chg_inv_v.se_L[[traj]] <- mxSE(paste0(y_var[traj], "chg_inv_v"), model, forceName = T)
-      chg_bl_m.se_L[[traj]] <- mxSE(paste0(y_var[traj], "chg_bl_m"), model, forceName = T)
-      chg_bl_v.se_L[[traj]] <- diag(mxSE(paste0(y_var[traj], "chg_bl_v"), model, forceName = T))
+      slp_m.se_L[[traj]] <- mxSE(paste0(y_var[traj], "slp_m"), model, forceName = TRUE)
+      slp_v.se_L[[traj]] <- diag(mxSE(paste0(y_var[traj], "slp_v"), model, forceName = TRUE))
+      chg_inv_m.se_L[[traj]] <- mxSE(paste0(y_var[traj], "chg_inv_m"), model, forceName = TRUE)
+      chg_inv_v.se_L[[traj]] <- mxSE(paste0(y_var[traj], "chg_inv_v"), model, forceName = TRUE)
+      chg_bl_m.se_L[[traj]] <- mxSE(paste0(y_var[traj], "chg_bl_m"), model, forceName = TRUE)
+      chg_bl_v.se_L[[traj]] <- diag(mxSE(paste0(y_var[traj], "chg_bl_v"), model, forceName = TRUE))
       if (curveFun %in% c("nonparametric", "NonP")){
         rel_m_est_L[[traj]] <- model@output$estimate[grep(paste0(y_var[traj], "_rel_rate"),
                                                           names(model@output$estimate))]
@@ -96,10 +98,19 @@ getMGM.output <- function(model, y_var, records, curveFun, y_model, names){
                           unlist(chg_inv_v.se_L), unlist(chg_bl_m.se_L), unlist(chg_bl_v.se_L)), 4)
     }
   }
+  # Safety net: ensure names and estimates have matching length
+  if (length(names) != length(model.est)){
+    warning("Number of parameter names (", length(names), ") does not match number of estimates (",
+            length(model.est), "). Auto-padding with generic labels.")
+    if (length(names) < length(model.est)){
+      names <- c(names, paste0("param_", seq(length(names) + 1, length(model.est))))
+    } else {
+      names <- names[seq_len(length(model.est))]
+    }
+  }
   estimate_out <- data.frame(Name = names, Estimate = model.est, SE = model.se)
   return(estimate_out)
 }
-
 
 
 

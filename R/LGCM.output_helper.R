@@ -12,6 +12,7 @@
 #' model with time-invariant covariates (if any).
 #'
 #' @keywords internal
+#' @noRd
 #'
 #' @importFrom OpenMx mxEval mxSE
 #'
@@ -31,6 +32,16 @@ getLGCM.output <- function(model, growth_TIC, names){
                          model@output$estimate[grep("Y_residuals", names(model@output$estimate))]), 4)
     model.se <- round(c(mxSE(Y_mean0, model), mxSE(Y_psi0, model)[row(mxSE(Y_psi0, model)) >= col(mxSE(Y_psi0, model))],
                         model@output$standardErrors[, 1][grep("Y_residuals", names(model@output$standardErrors[, 1]))]), 4)
+  }
+  # Safety net: ensure names and estimates have matching length
+  if (length(names) != length(model.est)){
+    warning("Number of parameter names (", length(names), ") does not match number of estimates (",
+            length(model.est), "). Auto-padding with generic labels.")
+    if (length(names) < length(model.est)){
+      names <- c(names, paste0("param_", seq(length(names) + 1, length(model.est))))
+    } else {
+      names <- names[seq_len(length(model.est))]
+    }
   }
   estimate_out <- data.frame(Name = names, Estimate = model.est, SE = model.se)
   return(estimate_out)

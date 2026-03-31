@@ -13,7 +13,7 @@
 #' "LGCM"} include: \code{"linear"} (or \code{"LIN"}), \code{"quadratic"} (or \code{"QUAD"}), \code{"negative exponential"}
 #' (or \code{"EXP"}), \code{"Jenss-Bayley"} (or \code{"JB"}), and \code{"bilinear spline"} (or \code{"BLS"}). Supported
 #' options for \code{y_model = "LCSM"} include: \code{"nonparametric"} (or \code{"NonP"}), \code{"quadratic"} (or \code{"QUAD"}),
-#' \code{"negative exponential"} (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}.
+#' \code{"negative exponential"} (or \code{"EXP"}), and \code{"Jenss-Bayley"} (or \code{"JB"}).
 #' @param intrinsic A logical flag indicating whether to build an intrinsically nonlinear longitudinal model. Default is
 #' \code{TRUE}.
 #' @param records A numeric vector specifying the indices of the observed study waves.
@@ -26,15 +26,16 @@
 #' variability of growth factors, if any. Default is \code{NULL}, indicating no growth TICs present in the model.
 #' @param starts A list containing initial values for the parameters. Default is \code{NULL}, indicating no user-specified initial
 #' values.
-#' @param res_scale A numeric value or numeric vector. For a model with \code{decompose = 0}, it is a numeric value representing
-#' the scaling factor used to calculate the initial value for the residual variance of the longitudinal outcome. In cases where
-#' \code{decompose != 0}, it is a numeric vector of user-specified scaling factors used to calculate the initial values for the
-#' residual variance of both the longitudinal outcome and the time-varying covariate. By default, this is \code{NULL}, as it is
-#' unnecessary when the user specifies the initial values using the \code{starts} argument.
-#' @param res_cor A numeric value. When \code{decompose != 0}, this represents the user-specified residual correlation between the
-#' longitudinal outcome and the time-varying covariate, which is used to calculate the corresponding initial value. If \code{decompose = 0},
-#' this should be \code{NULL}. By default, this is \code{NULL}, as it is unnecessary when the user specifies the initial values
-#' using the \code{starts} argument.
+#' @param res_scale An optional numeric value or numeric vector. For a model with \code{decompose = 0}, it is a numeric value
+#' representing the scaling factor used to calculate the initial value for the residual variance of the longitudinal outcome. In
+#' cases where \code{decompose != 0}, it is a numeric vector of scaling factors used to calculate the initial values for the
+#' residual variance of both the longitudinal outcome and the time-varying covariate. Default is \code{NULL}, in which case
+#' data-driven residual variance estimation is used. If data-driven estimation fails, a heuristic of \code{0.1} is applied as
+#' fallback.
+#' @param res_cor An optional numeric value. When \code{decompose != 0}, this represents the user-specified residual correlation
+#' between the longitudinal outcome and the time-varying covariate, which is used to calculate the corresponding initial value. If
+#' \code{decompose = 0}, this should be \code{NULL}. Default is \code{NULL}, in which case data-driven residual correlation
+#' estimation is used when \code{decompose != 0}. If data-driven estimation fails, a heuristic of \code{0.3} is applied as fallback.
 #' @param tries An integer specifying the number of additional optimization attempts. Default is \code{NULL}.
 #' @param OKStatus An integer (vector) specifying acceptable status codes for convergence. Default is \code{0}.
 #' @param jitterD A string specifying the distribution for jitter. Supported values are: \code{"runif"} (uniform
@@ -42,7 +43,8 @@
 #' @param loc A numeric value representing the location parameter of the jitter distribution. Default is \code{1}.
 #' @param scale A numeric value representing the scale parameter of the jitter distribution. Default is \code{0.25}.
 #' @param paramOut A logical flag indicating whether to output the parameter estimates and standard errors. Default is \code{FALSE}.
-#' @param names A character vector specifying parameter names. Default is \code{NULL}.
+#' @param names A character vector specifying parameter names. Default is \code{NULL}, in which case
+#' meaningful names are automatically generated based on the model configuration.
 #'
 #' @return An object of class \code{myMxOutput}. Depending on the \code{paramOut} argument, the object may contain the following slots:
 #' \itemize{
@@ -55,10 +57,12 @@
 #' @references
 #' \itemize{
 #'   \item {Liu, J., & Perera, R. A. (2023). Estimating Rate of Change for Nonlinear Trajectories in the Framework of Individual Measurement
-#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods. \doi{10.3758/s13428-023-02097-2}}
-#'   \item {Liu, J. (2022). "Decomposing Impact on Longitudinal Outcome of Time-varying Covariate into Baseline Effect and Temporal Effect."
-#'   arXiv. https://arxiv.org/abs/2210.16916}
+#'   Occasions: A New Perspective on Growth Curves. Behavior Research Methods, 56(3), 1349-1375. \doi{10.3758/s13428-023-02097-2}}
+#'   \item {Liu, J. (2025). Decomposing Impact on Longitudinal Outcome of Time-varying Covariate into Baseline Effect and Temporal Effect.
+#'   Journal of Educational and Behavioral Statistics, 50(5), 765-805. \doi{10.3102/10769986241263975}}
 #' }
+#'
+#' @seealso \code{\link{getLGCM}}, \code{\link{getLCSM}}, \code{\link{getFigure}}
 #'
 #' @export
 #'
@@ -98,29 +102,18 @@
 #' # reading ability for mathematics development
 #' BLS_TVC_LGCM1 <- getTVCmodel(
 #'  dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "BLS", intrinsic = FALSE,
-#'  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 0,  growth_TIC = NULL,
-#'  res_scale = 0.1
+#'  records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 0, growth_TIC = NULL
 #'  )
 #'
 #' # Fit negative exponential latent growth curve model (random ratio) with a
 #' # decomposed time-varying reading ability and time-invariant covariates for
 #' # mathematics development
-#' paraEXP_LGCM3.f <- c(
-#'   "Y_alpha0", "Y_alpha1", "Y_alphag",
-#'   paste0("Y_psi", c("00", "01", "0g", "11", "1g", "gg")), "Y_residuals",
-#'   "X_mueta0", "X_mueta1", paste0("X_psi", c("00", "01", "11")),
-#'   paste0("X_rel_rate", 2:8), paste0("X_abs_rate", 1:8), "X_residuals",
-#'   paste0("betaTIC", c(0:1, "g")), paste0("betaTIC", c(0:1, "g")),
-#'   paste0("betaTVC", c(0:1, "g")),
-#'   "muTIC1", "muTIC2", "phiTIC11", "phiTIC12", "phiTIC22",
-#'   "Y_mueta0", "Y_mueta1", "Y_mu_slp_ratio",
-#'   "covBL1", "covBL2", "kappa", "Cov_XYres")
 #' set.seed(20191029)
 #' EXP_TVCslp_LGCM3.f <- getTVCmodel(
 #'   dat = RMS_dat0, t_var = "T", y_var = "M", curveFun = "EXP", intrinsic = TRUE,
 #'   records = 1:9, y_model = "LGCM", TVC = "Rs", decompose = 1,
-#'   growth_TIC = c("ex1", "ex2"), res_scale = c(0.1, 0.1),
-#'   res_cor = 0.3, tries = 10, paramOut = TRUE, names = paraEXP_LGCM3.f
+#'   growth_TIC = c("ex1", "ex2"),
+#'   tries = 20, paramOut = TRUE
 #' )
 #' printTable(EXP_TVCslp_LGCM3.f)
 #' }
@@ -131,21 +124,22 @@
 getTVCmodel <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, y_model, TVC, decompose,
                         growth_TIC = NULL, starts = NULL, res_scale = NULL, res_cor = NULL, tries = NULL,
                         OKStatus = 0, jitterD = "runif", loc = 1, scale = 0.25, paramOut = FALSE, names = NULL){
-  if (I(paramOut & is.null(names))){
-    stop("Please enter the original parameters if want to obtain them!")
-  }
-  if (I(any(res_scale <= 0) | any(res_scale >= 1))){
-    stop("Please enter a value between 0 and 1 (exclusive) for res_scale!")
-  }
-  if (I(intrinsic & curveFun %in% c("linear", "LIN", "quadratic", "QUAD", "nonparametric", "NonP"))){
-    stop("An intrinsic nonlinear function should be negative exponential, Jenss-Bayley, or bilinear spline!")
-  }
+  dat <- as.data.frame(dat)
+  validate_paramOut(paramOut, names)
+  validate_res_scale(res_scale)
+  validate_res_cor(res_cor)
+  validate_curveFun(curveFun)
+  validate_decompose(decompose)
+  validate_intrinsic(intrinsic, curveFun, model_type = "general")
+  validate_curveFun_ymodel(curveFun, y_model)
+  validate_columns(dat, t_var = t_var, y_var = y_var, records = records,
+                   growth_TIC = growth_TIC, TVC = TVC)
 
   ## Derive initial values for the parameters of interest if not specified by users
   if (is.null(starts)){
     starts <- getTVC.initial(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, records = records,
                              growth_TIC = growth_TIC, TVC = TVC, decompose = decompose, res_scale = res_scale,
-                             res_cor = res_cor)
+                             res_cor = res_cor, intrinsic = intrinsic)
   }
   ## Build up a latent growth curve model or latent change score model with a decomposed TVC (and TICs if any)
   model_mx <- getTVC.mxModel(dat = dat, t_var = t_var, y_var = y_var, curveFun = curveFun, intrinsic = intrinsic,
@@ -153,15 +147,15 @@ getTVCmodel <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, 
                              y_model = y_model, starts = starts)
   ## Optimize the constructed latent growth curve model or latent change score model with a decomposed TVC
   if (!is.null(tries)){
-    model0 <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
+    model <- mxTryHard(model_mx, extraTries = tries, OKstatuscodes = OKStatus, jitterDistrib = jitterD,
                         loc = loc, scale = scale)
-    model <- mxRun(model0)
   }
   else{
     model <- mxRun(model_mx)
   }
   ## Print out the point estimates and standard errors for the parameters of interest
   if(paramOut){
+    if (is.null(names)) names <- .auto_names_TVC(curveFun, intrinsic, records, y_model, decompose, growth_TIC)
     TVC_output <- getTVC.output(model = model, curveFun = curveFun, records = records, y_model = y_model,
                                 decompose = decompose, growth_TIC = growth_TIC, names = names)
     model <- new("myMxOutput", mxOutput = model, Estimates = TVC_output)
@@ -171,4 +165,3 @@ getTVCmodel <- function(dat, t_var, y_var, curveFun, intrinsic = TRUE, records, 
   }
   return(model)
 }
-
